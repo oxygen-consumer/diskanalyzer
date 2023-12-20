@@ -20,4 +20,3 @@ clean:
 
 install:
 	cp $(EXEC) /usr/local/bin/da
-

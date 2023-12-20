@@ -11,4 +11,3 @@ clean:
 install:
 	$(MAKE) -C daemon install
 	$(MAKE) -C cli install
-

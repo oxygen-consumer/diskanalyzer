@@ -17,4 +17,3 @@ RUN make all && make install
 
 # Enter the container environment
 CMD ["/bin/bash"]
-
