@@ -7,7 +7,7 @@ INCLUDE_DIR = include
 BUILD_DIR = build
 SRC = $(wildcard $(SRC_DIR)/*.c)
 OBJ = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC))
-EXEC = $(BUILD_DIR)/da-daemon
+EXEC = $(BUILD_DIR)/diskanalyzer.out
 
 all: mkdir_build $(EXEC)
 
@@ -21,7 +21,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(BUILD_DIR)/*
+	rm -rf $(BUILD_DIR)
 
 install:
-	cp $(EXEC) /usr/local/bin/da-daemon
+	cp $(EXEC) /usr/local/bin/diskanalyzer
