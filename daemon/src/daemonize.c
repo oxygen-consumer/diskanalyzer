@@ -1,5 +1,7 @@
 #include <daemonize.h>
 
+#include <utils.h>
+
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -72,16 +74,20 @@ unsigned short daemonize(void)
 
     // Bind signals
     signal(SIGTERM, signal_handler);
+    /*
+     * TODO: bind other signals.
+     * Documentation suggests all of them with a for loop,
+     * but I don't think it's necessary or doable for this project
+     * */
 
     return 0;
 }
 
 void signal_handler(int signum)
 {
+    // FIXME: this would better be a switch-case
     if (signum == SIGTERM)
     {
-        syslog(LOG_USER | LOG_INFO, "Received SIGTERM. Exiting.");
-        closelog();
-        exit(EXIT_SUCCESS);
+        die(true, "Received SIGTERM. Exititng.");
     }
 }
