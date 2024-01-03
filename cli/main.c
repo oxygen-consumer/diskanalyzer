@@ -4,7 +4,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-int main(void)
+int main(int argc, char *argv[])
 {
     /*
      * FIXME: Send a test message to the server to test the connection.
@@ -39,14 +39,47 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    while ((nread = read(STDIN_FILENO, buf, BUF_SIZE)) > 0)
-    {
-        if (write(sfd, buf, nread) != nread)
-        {
-            perror("write");
-            exit(EXIT_FAILURE);
+    int option;
+    int option_index = 0;
+    static struct option long_options[] = {
+        {"add", required_argument, NULL, 'a'},
+        {"priority", required_argument, NULL, 'p'},
+        {"suspend", required_argument, NULL, 'S'},
+        {"resume", required_argument, NULL, 'R'},
+        {"remove", required_argument, NULL, 'r'},
+        {"info", required_argument, NULL, 'i'},
+        {"list", no_argument, NULL, 'l'},
+        {"print", required_argument, NULL, 'p'},
+        {0, 0, 0, 0}
+    };
+
+    while ((option = getopt_long(argc, argv, "a:p:S:R:r:i:l", long_options, &option_index)) != -1) {
+        switch (option) {
+            case 'a':
+                printf("Analyze directory: %s\n", optarg);
+                break;
+            case 'p':
+                printf("Set priority: %s\n", optarg);
+                break;
+            case 'S':
+                printf("Suspend task with ID: %s\n", optarg);
+                break;
+            case 'R':
+                printf("Resume task with ID: %s\n", optarg);
+                break;
+            case 'r':
+                printf("Remove analysis with ID: %s\n", optarg);
+                break;
+            case 'i':
+                printf("Print status for analysis with ID: %s\n", optarg);
+                break;
+            case 'l':
+                printf("List all analysis tasks\n");
+                break;
+            default:
+                usage("Unknown option");
+                break;
         }
     }
-
     return 0;
 }
