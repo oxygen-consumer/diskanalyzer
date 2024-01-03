@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -Wall -Wextra -pedantic -std=gnu17 -I./include -I../shared/include
+CFLAGS = -Wall -Wextra -pedantic -std=gnu17 -I./include
 LDFLAGS = -lpthread
 
 SRC_DIR = src

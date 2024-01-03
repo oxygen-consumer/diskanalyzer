@@ -1,5 +1,4 @@
 #include <daemonize.h>
-#include <shared.h>
 #include <utils.h>
 
 #include <errno.h>
@@ -64,9 +63,6 @@ int main(void)
     // Everything ready
     syslog(LOG_USER | LOG_INFO, "Diskanalyzer daemon ready.");
 
-    struct message msg;
-    ssize_t bytes_received;
-
     while (true)
     {
         // Handle every incomming connection
@@ -84,15 +80,19 @@ int main(void)
              * for test purposes.
              * We will need a function to process them accordingly.
              */
-            bytes_received = recv(cfd, &msg, sizeof(msg), 0);
-
-            if (bytes_received <= 0)
+            while ((nread = read(cfd, buf, BUF_SIZE)) > 0)
             {
-                syslog(LOG_USER | LOG_WARNING, "Failed to read from socket. bytes_received = %ld", bytes_received);
+                syslog(LOG_USER | LOG_INFO, "Received: %s", buf);
             }
-            else
+
+            if (nread == -1)
             {
-                syslog(LOG_USER | LOG_INFO, "Received: %s", msg.path);
+                syslog(LOG_USER | LOG_WARNING, "Failed to read from socket.");
+            }
+
+            if (close(cfd) == -1)
+            {
+                syslog(LOG_USER | LOG_WARNING, "Failed to close connetion.");
             }
         }
     }
