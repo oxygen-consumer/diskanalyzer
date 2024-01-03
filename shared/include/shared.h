@@ -1,5 +1,6 @@
 enum TaskCode
 {
+    NO_TASK,
     ADD,
     PRIORITY,
     SUSPEND,
@@ -10,6 +11,14 @@ enum TaskCode
     PRINT,
 };
 
+enum Priority
+{
+    NO_PRIORITY,
+    LOW,
+    MEDIUM,
+    HIGH,
+};
+
 struct error
 {
     int error_code;
@@ -18,9 +27,8 @@ struct error
 
 struct message
 {
-    enum TaskCode task_code; 
+    enum TaskCode task_code;
     char *path;
-    int id, priority;
+    int id;
+    enum Priority priority;
 };
-
-
