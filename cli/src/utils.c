@@ -1,5 +1,6 @@
 #include <utils.h>
 
+#include <dirent.h>
 #include <stdlib.h>
 
 int stringToInt(const char *str)
@@ -11,4 +12,18 @@ int stringToInt(const char *str)
         return -1;
     }
     return result;
+}
+
+int isValidDirectory(const char *path)
+{
+    DIR *dir = opendir(path);
+    if (dir)
+    {
+        closedir(dir);
+        return 1; // Valid directory
+    }
+    else
+    {
+        return 0; // Not a directory or doesn't exist
+    }
 }

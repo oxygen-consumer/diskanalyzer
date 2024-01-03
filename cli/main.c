@@ -98,7 +98,13 @@ int main(int argc, char *argv[])
                 usage("Path too long");
             }
 
-            strcpy(msg.path, optarg);
+            if (!isValidDirectory(optarg))
+            {
+                usage("Invalid path");
+            }
+
+            realpath(optarg, msg.path);
+
             msg.priority = MEDIUM;
             break;
         }
@@ -191,6 +197,26 @@ int main(int argc, char *argv[])
     {
         usage("No task specified");
     }
+    ssize_t bytes_sent;
+    bytes_sent = send(sfd, &msg, sizeof(msg), 0);
 
+    if (bytes_sent == -1)
+    {
+        fprintf(stderr, "Failed to send message to server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /*FIXME
+     * last 10 lines have NOT been tested
+     * Receive the response from the server and print it to stdout.
+     * The response is a struct error.
+     * If the error_code is 0, then the operation was successful.
+     * Otherwise, print the error_msg to stderr.
+     * Remember to close the socket.
+     * Return 0 if the operation was successful, 1 otherwise.
+     * Remember to handle the case when the server is not running.
+     *
+     * Hint: use recv() to receive the response.
+     */
     return 0;
 }
