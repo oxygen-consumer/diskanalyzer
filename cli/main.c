@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    /*FIXME
+    /* FIXME:
      * last 10 lines have NOT been tested
      * Receive the response from the server and print it to stdout.
      * The response is a struct error.
