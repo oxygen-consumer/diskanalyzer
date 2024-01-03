@@ -84,7 +84,7 @@ int main(void)
              * for test purposes.
              * We will need a function to process them accordingly.
              */
-            bytes_received = recv(sfd, &msg, sizeof(msg), 0);
+            bytes_received = recv(cfd, &msg, sizeof(msg), 0);
 
             if (bytes_received <= 0)
             {
@@ -94,20 +94,6 @@ int main(void)
             {
                 syslog(LOG_USER | LOG_INFO, "Received: %s", msg.path);
             }
-            // while ((nread = read(cfd, buf, BUF_SIZE)) > 0)
-            // {
-            //     syslog(LOG_USER | LOG_INFO, "Received: %s", buf);
-            // }
-
-            // if (nread == -1)
-            // {
-            //     syslog(LOG_USER | LOG_WARNING, "Failed to read from socket.");
-            // }
-
-            // if (close(cfd) == -1)
-            // {
-            //     syslog(LOG_USER | LOG_WARNING, "Failed to close connetion.");
-            // }
         }
     }
 
