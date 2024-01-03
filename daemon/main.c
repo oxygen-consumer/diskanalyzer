@@ -64,6 +64,9 @@ int main(void)
     // Everything ready
     syslog(LOG_USER | LOG_INFO, "Diskanalyzer daemon ready.");
 
+    struct message msg;
+    ssize_t bytes_received;
+
     while (true)
     {
         // Handle every incomming connection
@@ -81,20 +84,30 @@ int main(void)
              * for test purposes.
              * We will need a function to process them accordingly.
              */
-            while ((nread = read(cfd, buf, BUF_SIZE)) > 0)
-            {
-                syslog(LOG_USER | LOG_INFO, "Received: %s", buf);
-            }
+            bytes_received = recv(sfd, &msg, sizeof(msg), 0);
 
-            if (nread == -1)
+            if (bytes_received <= 0)
             {
-                syslog(LOG_USER | LOG_WARNING, "Failed to read from socket.");
+                syslog(LOG_USER | LOG_WARNING, "Failed to read from socket. bytes_received = %ld", bytes_received);
             }
+            else
+            {
+                syslog(LOG_USER | LOG_INFO, "Received: %s", msg.path);
+            }
+            // while ((nread = read(cfd, buf, BUF_SIZE)) > 0)
+            // {
+            //     syslog(LOG_USER | LOG_INFO, "Received: %s", buf);
+            // }
 
-            if (close(cfd) == -1)
-            {
-                syslog(LOG_USER | LOG_WARNING, "Failed to close connetion.");
-            }
+            // if (nread == -1)
+            // {
+            //     syslog(LOG_USER | LOG_WARNING, "Failed to read from socket.");
+            // }
+
+            // if (close(cfd) == -1)
+            // {
+            //     syslog(LOG_USER | LOG_WARNING, "Failed to close connetion.");
+            // }
         }
     }
 
