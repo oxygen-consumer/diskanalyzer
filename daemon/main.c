@@ -1,4 +1,5 @@
 #include <daemonize.h>
+#include <shared.h>
 #include <utils.h>
 
 #include <errno.h>
