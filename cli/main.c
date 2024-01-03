@@ -81,34 +81,32 @@ int main(int argc, char *argv[])
     msg.id = -1;
     msg.priority = NO_PRIORITY;
 
-    bool encountered_before[10];
-    for (int i = 0; i < 10; i++)
-    {
-        encountered_before[i] = false;
-    }
-
     while ((option = getopt_long(argc, argv, "a:P:S:R:r:i:lp:", long_options, &option_index)) != -1)
     {
+        if (msg.task_code != NO_TASK && option != 'P')
+        {
+            usage("Cannot add more than one task");
+        }
+
         switch (option)
         {
         case 'a': {
             msg.task_code = ADD;
-            if (encountered_before[msg.task_code])
+
+            if (strlen(optarg) > 255)
             {
-                usage("Option -a encountered more than once");
+                usage("Path too long");
             }
-            encountered_before[msg.task_code] = true;
 
             strcpy(msg.path, optarg);
+            msg.priority = MEDIUM;
             break;
         }
         case 'P': {
-            msg.task_code = PRIORITY;
-            if (encountered_before[msg.task_code])
+            if (msg.task_code != ADD)
             {
-                usage("Option -P encountered more than once");
+                usage("Option -P requires option -a first");
             }
-            encountered_before[msg.task_code] = true;
 
             if (strcmp(optarg, "low") == 0)
             {
@@ -130,11 +128,6 @@ int main(int argc, char *argv[])
         }
         case 'S': {
             msg.task_code = SUSPEND;
-            if (encountered_before[msg.task_code])
-            {
-                usage("Option -S encountered more than once");
-            }
-            encountered_before[msg.task_code] = true;
 
             msg.id = stringToInt(optarg);
             if (msg.id < 0)
@@ -145,11 +138,6 @@ int main(int argc, char *argv[])
         }
         case 'R': {
             msg.task_code = RESUME;
-            if (encountered_before[msg.task_code])
-            {
-                usage("Option -R encountered more than once");
-            }
-            encountered_before[msg.task_code] = true;
 
             msg.id = stringToInt(optarg);
             if (msg.id < 0)
@@ -160,11 +148,6 @@ int main(int argc, char *argv[])
         }
         case 'r': {
             msg.task_code = REMOVE;
-            if (encountered_before[msg.task_code])
-            {
-                usage("Option -r encountered more than once");
-            }
-            encountered_before[msg.task_code] = true;
 
             msg.id = stringToInt(optarg);
             if (msg.id < 0)
@@ -175,11 +158,6 @@ int main(int argc, char *argv[])
         }
         case 'i': {
             msg.task_code = INFO;
-            if (encountered_before[msg.task_code])
-            {
-                usage("Option -i encountered more than once");
-            }
-            encountered_before[msg.task_code] = true;
 
             msg.id = stringToInt(optarg);
             if (msg.id < 0)
@@ -194,11 +172,6 @@ int main(int argc, char *argv[])
         }
         case 'p': {
             msg.task_code = PRINT;
-            if (encountered_before[msg.task_code])
-            {
-                usage("Option -p encountered more than once");
-            }
-            encountered_before[msg.task_code] = true;
 
             msg.id = stringToInt(optarg);
             if (msg.id < 0)
@@ -212,16 +185,6 @@ int main(int argc, char *argv[])
             break;
         }
         }
-    }
-
-    if (encountered_before[PRIORITY] && !encountered_before[ADD])
-    {
-        usage("Option -P requires option -a");
-    }
-
-    if (encountered_before[ADD] && !encountered_before[PRIORITY])
-    {
-        msg.priority = MEDIUM;
     }
 
     return 0;
