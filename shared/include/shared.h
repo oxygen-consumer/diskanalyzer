@@ -22,13 +22,13 @@ enum Priority
 struct error
 {
     int error_code;
-    char *error_msg;
+    char error_msg[256];
 };
 
 struct message
 {
     enum TaskCode task_code;
-    char *path;
+    char path[256];
     int id;
     enum Priority priority;
 };
