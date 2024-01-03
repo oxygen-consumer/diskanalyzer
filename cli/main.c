@@ -1,6 +1,8 @@
 #include <shared.h>
+#include <utils.h>
 
 #include <getopt.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -15,14 +17,14 @@ void usage(const char *message)
     }
     fprintf(stderr, "Usage: ./program [options]\n");
     fprintf(stderr, "Options:\n");
-    fprintf(stderr, "  -a, --add <arg>\tAnalyze directory\n");
-    fprintf(stderr, "  -p, --priority <arg>\tSet priority\n");
-    fprintf(stderr, "  -S, --suspend <arg>\tSuspend task with ID\n");
-    fprintf(stderr, "  -R, --resume <arg>\tResume task with ID\n");
-    fprintf(stderr, "  -r, --remove <arg>\tRemove analysis with ID\n");
-    fprintf(stderr, "  -i, --info <arg>\tPrint status for analysis with ID\n");
+    fprintf(stderr, "  -a, --add <path>\tAnalyze directory\n");
+    fprintf(stderr, "  -P, --priority <low/normal/high>\tSet priority\n");
+    fprintf(stderr, "  -S, --suspend <id>\tSuspend task with ID\n");
+    fprintf(stderr, "  -R, --resume <id>\tResume task with ID\n");
+    fprintf(stderr, "  -r, --remove <id>\tRemove analysis with ID\n");
+    fprintf(stderr, "  -i, --info <id>\tPrint status for analysis with ID\n");
     fprintf(stderr, "  -l, --list\t\tList all analysis tasks\n");
-    fprintf(stderr, "  -p, --print <arg>\tPrint analysis report for task with ID\n");
+    fprintf(stderr, "  -p, --print <id>\tPrint analysis report for task with ID\n");
     exit(1);
 }
 
@@ -33,15 +35,15 @@ int main(int argc, char *argv[])
      */
 
     // Socket preparation
-    const int BUF_SIZE = 4096;
+    // const int BUF_SIZE = 4096;
 
     char SV_SOCK_PATH[37];
     sprintf(SV_SOCK_PATH, "/var/run/user/%d/diskanalyzer.sock", getuid());
 
     struct sockaddr_un addr;
-    char buf[BUF_SIZE];
+    // char buf[BUF_SIZE];
     int sfd; // server fd
-    ssize_t nread;
+    // ssize_t nread;
 
     sfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sfd == -1)
@@ -64,7 +66,7 @@ int main(int argc, char *argv[])
     int option;
     int option_index = 0;
     static struct option long_options[] = {{"add", required_argument, NULL, 'a'},
-                                           {"priority", required_argument, NULL, 'p'},
+                                           {"priority", required_argument, NULL, 'P'},
                                            {"suspend", required_argument, NULL, 'S'},
                                            {"resume", required_argument, NULL, 'R'},
                                            {"remove", required_argument, NULL, 'r'},
@@ -73,36 +75,136 @@ int main(int argc, char *argv[])
                                            {"print", required_argument, NULL, 'p'},
                                            {0, 0, 0, 0}};
 
-    while ((option = getopt_long(argc, argv, "a:p:S:R:r:i:l", long_options, &option_index)) != -1)
+    struct message msg;
+    msg.task_code = NO_TASK;
+    msg.path[0] = '\0';
+    msg.id = -1;
+    msg.priority = NO_PRIORITY;
+
+    bool encountered_before[10];
+    for (int i = 0; i < 10; i++)
+    {
+        encountered_before[i] = false;
+    }
+
+    while ((option = getopt_long(argc, argv, "a:P:S:R:r:i:lp:", long_options, &option_index)) != -1)
     {
         switch (option)
         {
         case 'a': {
-            printf("Analyze directory: %s\n", optarg);
+            msg.task_code = ADD;
+            if (encountered_before[msg.task_code])
+            {
+                usage("Option -a encountered more than once");
+            }
+            encountered_before[msg.task_code] = true;
+
+            strcpy(msg.path, optarg);
             break;
         }
-        case 'p': {
-            printf("Set priority: %s\n", optarg);
+        case 'P': {
+            msg.task_code = PRIORITY;
+            if (encountered_before[msg.task_code])
+            {
+                usage("Option -P encountered more than once");
+            }
+            encountered_before[msg.task_code] = true;
+
+            if (strcmp(optarg, "low") == 0)
+            {
+                msg.priority = LOW;
+            }
+            else if (strcmp(optarg, "normal") == 0)
+            {
+                msg.priority = MEDIUM;
+            }
+            else if (strcmp(optarg, "high") == 0)
+            {
+                msg.priority = HIGH;
+            }
+            else
+            {
+                usage("Invalid priority");
+            }
             break;
         }
         case 'S': {
-            printf("Suspend task with ID: %s\n", optarg);
+            msg.task_code = SUSPEND;
+            if (encountered_before[msg.task_code])
+            {
+                usage("Option -S encountered more than once");
+            }
+            encountered_before[msg.task_code] = true;
+
+            msg.id = stringToInt(optarg);
+            if (msg.id < 0)
+            {
+                usage("Invalid ID");
+            }
             break;
         }
         case 'R': {
-            printf("Resume task with ID: %s\n", optarg);
+            msg.task_code = RESUME;
+            if (encountered_before[msg.task_code])
+            {
+                usage("Option -R encountered more than once");
+            }
+            encountered_before[msg.task_code] = true;
+
+            msg.id = stringToInt(optarg);
+            if (msg.id < 0)
+            {
+                usage("Invalid ID");
+            }
             break;
         }
         case 'r': {
-            printf("Remove analysis with ID: %s\n", optarg);
+            msg.task_code = REMOVE;
+            if (encountered_before[msg.task_code])
+            {
+                usage("Option -r encountered more than once");
+            }
+            encountered_before[msg.task_code] = true;
+
+            msg.id = stringToInt(optarg);
+            if (msg.id < 0)
+            {
+                usage("Invalid ID");
+            }
             break;
         }
         case 'i': {
-            printf("Print status for analysis with ID: %s\n", optarg);
+            msg.task_code = INFO;
+            if (encountered_before[msg.task_code])
+            {
+                usage("Option -i encountered more than once");
+            }
+            encountered_before[msg.task_code] = true;
+
+            msg.id = stringToInt(optarg);
+            if (msg.id < 0)
+            {
+                usage("Invalid ID");
+            }
             break;
         }
         case 'l': {
-            printf("List all analysis tasks\n");
+            msg.task_code = LIST;
+            break;
+        }
+        case 'p': {
+            msg.task_code = PRINT;
+            if (encountered_before[msg.task_code])
+            {
+                usage("Option -p encountered more than once");
+            }
+            encountered_before[msg.task_code] = true;
+
+            msg.id = stringToInt(optarg);
+            if (msg.id < 0)
+            {
+                usage("Invalid ID");
+            }
             break;
         }
         default: {
@@ -111,5 +213,16 @@ int main(int argc, char *argv[])
         }
         }
     }
+
+    if (encountered_before[PRIORITY] && !encountered_before[ADD])
+    {
+        usage("Option -P requires option -a");
+    }
+
+    if (encountered_before[ADD] && !encountered_before[PRIORITY])
+    {
+        msg.priority = MEDIUM;
+    }
+
     return 0;
 }
