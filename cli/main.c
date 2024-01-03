@@ -17,14 +17,14 @@ void usage(const char *message)
     }
     fprintf(stderr, "Usage: ./program [options]\n");
     fprintf(stderr, "Options:\n");
-    fprintf(stderr, "  -a, --add <path>\tAnalyze directory\n");
+    fprintf(stderr, "  -a, --add <path>\t\t\tAnalyze directory\n");
     fprintf(stderr, "  -P, --priority <low/normal/high>\tSet priority\n");
-    fprintf(stderr, "  -S, --suspend <id>\tSuspend task with ID\n");
-    fprintf(stderr, "  -R, --resume <id>\tResume task with ID\n");
-    fprintf(stderr, "  -r, --remove <id>\tRemove analysis with ID\n");
-    fprintf(stderr, "  -i, --info <id>\tPrint status for analysis with ID\n");
-    fprintf(stderr, "  -l, --list\t\tList all analysis tasks\n");
-    fprintf(stderr, "  -p, --print <id>\tPrint analysis report for task with ID\n");
+    fprintf(stderr, "  -S, --suspend <id>\t\t\tSuspend task\n");
+    fprintf(stderr, "  -R, --resume <id>\t\t\tResume task\n");
+    fprintf(stderr, "  -r, --remove <id>\t\t\tRemove task\n");
+    fprintf(stderr, "  -i, --info <id>\t\t\tPrint task status\n");
+    fprintf(stderr, "  -l, --list\t\t\t\tList all analysis tasks\n");
+    fprintf(stderr, "  -p, --print <id>\t\t\tPrint task analysis report \n");
     exit(1);
 }
 
@@ -185,6 +185,11 @@ int main(int argc, char *argv[])
             break;
         }
         }
+    }
+
+    if (msg.task_code == NO_TASK)
+    {
+        usage("No task specified");
     }
 
     return 0;
