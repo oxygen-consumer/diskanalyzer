@@ -48,6 +48,4 @@ int special_directory(char *d_name);
 
 int get_depth(const char *path, const char *subpath);
 
-void write_report_info(FILE *output_fd, const char *path, long long size, int id);
-
 #endif

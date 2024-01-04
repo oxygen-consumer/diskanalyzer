@@ -1,6 +1,5 @@
 #include <utils.h>
 
-#include <analyzer.h>
 #include <assert.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -99,22 +98,4 @@ int get_depth(const char *path, const char *subpath)
     }
 
     return depth;
-}
-
-void write_report_info(FILE *output_fd, const char *path, long long size, int id)
-{
-    int depth = get_depth(task[id]->path, path);
-    if (depth > 0 && depth <= 2)
-    {
-        fprintf(output_fd, "|-%s %0.2lf%% %lld\n", relative_path(path, depth),
-                ((double)size / task[id]->total_size) * 100, size);
-    }
-    if (depth == 1)
-    {
-        fprintf(output_fd, "|\n");
-    }
-    if (depth == 0)
-    {
-        fprintf(output_fd, "%s %0.2lf%% %lld\n", path, ((double)size / task[id]->total_size) * 100, size);
-    }
 }

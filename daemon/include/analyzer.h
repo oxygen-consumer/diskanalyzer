@@ -21,43 +21,44 @@ struct task_details
     int files, dirs;
     char path[MAX_PATH_LENGTH];
     long long total_size;
+    pthread_mutex_t *permission_mutex;
+    pthread_mutex_t *status_mutex;
 };
-
-struct task_details *task[MAX_TASKS];
-pthread_mutex_t permission_mutex[MAX_TASKS];
-pthread_mutex_t status_mutex[MAX_TASKS];
-pthread_t threads[MAX_TASKS];
 
 void output_task(struct task_details *task);
 
 /* Check the permission mutex.
  */
-void permission_to_continue(int id);
+void permission_to_continue(struct task_details *task);
 
 /* Change task status.
  */
-void set_task_status(int id, int status);
+void set_task_status(struct task_details *task, int status);
 
 /* Returns the size of a directory (including subdirectories).
  */
-long long get_size_dir(const char *path, int task_id);
+long long get_size_dir(const char *path, struct task_details *task);
 
 /* Writes the analyze report to the file descriptor.
  */
-long long analyzing(const char *path, int task_id, FILE *output_fd);
+long long analyzing(const char *path, struct task_details *task, FILE *output_fd);
 
 /* Start the thread report.
  */
 void *start_analyses_thread(void *arg);
 
-/*  Allocates memory for tasks and initialize mutexes.
+void suspend_task(struct task_details *task);
+
+void resume_task(struct task_details *task);
+
+void write_report_info(FILE *output_fd, const char *path, long long size, struct task_details *task);
+
+/*  Return a new task with the given id.
  */
-void init_taks();
+struct task_details *init_task(int id);
 
-void destroy_tasks();
-
-void suspend_task(int id);
-
-void resume_task(int id);
+/*  Free the memory allocated for the task.
+ */
+void destroy_task(struct task_details *task);
 
 #endif // ANALYZER_H

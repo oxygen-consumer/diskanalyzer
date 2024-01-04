@@ -23,24 +23,24 @@ void output_task(struct task_details *task)
     printf("Task total_size: %lld\n", task->total_size);
 }
 
-void permission_to_continue(int id)
+void permission_to_continue(struct task_details *task)
 {
-    pthread_mutex_lock(&permission_mutex[id]);
-    pthread_mutex_unlock(&permission_mutex[id]);
+    pthread_mutex_lock(task->permission_mutex);
+    pthread_mutex_unlock(task->permission_mutex);
 }
 
-void set_task_status(int id, int status)
+void set_task_status(struct task_details *task, int status)
 {
-    pthread_mutex_lock(&status_mutex[id]);
-    printf("Task %d with status %d.\n", id, status);
-    task[id]->status = status;
-    pthread_mutex_unlock(&status_mutex[id]);
+    pthread_mutex_lock(task->status_mutex);
+    printf("Task %d with status %d.\n", task->task_id, status);
+    task->status = status;
+    pthread_mutex_unlock(task->status_mutex);
 }
 
 // returns the size of a directory (including subdirectories)
-long long get_size_dir(const char *path, int task_id)
+long long get_size_dir(const char *path, struct task_details *task)
 {
-    permission_to_continue(task_id);
+    permission_to_continue(task);
 
     DIR *directory = opendir(path);
     if (directory == NULL)
@@ -57,15 +57,15 @@ long long get_size_dir(const char *path, int task_id)
 
         add_to_path(path, sub_directory->d_name, sub_path);
         size += fsize(sub_path);
-        size += get_size_dir(sub_path, task_id);
+        size += get_size_dir(sub_path, task);
     }
     closedir(directory);
     return size;
 }
 
-long long analyzing(const char *path, int task_id, FILE *output_fd)
+long long analyzing(const char *path, struct task_details *task, FILE *output_fd)
 {
-    permission_to_continue(task_id);
+    permission_to_continue(task);
 
     char sub_path[MAX_PATH_LENGTH];
     struct stat file_stat;
@@ -86,18 +86,18 @@ long long analyzing(const char *path, int task_id, FILE *output_fd)
 
         if (S_ISREG(file_stat.st_mode))
         {
-            task[task_id]->files += 1;
+            task->files += 1;
             size += fsize(sub_path);
         }
         else if (S_ISDIR(file_stat.st_mode))
         {
-            task[task_id]->dirs += 1;
+            task->dirs += 1;
             size += fsize(sub_path);
-            size += analyzing(sub_path, task_id, output_fd);
+            size += analyzing(sub_path, task, output_fd);
         }
     }
     closedir(directory);
-    write_report_info(output_fd, path, size, task_id);
+    write_report_info(output_fd, path, size, task);
     return size;
 }
 
@@ -115,52 +115,75 @@ void *start_analyses_thread(void *arg)
     }
 
     assert(current_task->path != NULL && current_task->path[0] != '\0');
-    current_task->total_size = get_size_dir(current_task->path, current_task->task_id);
+    current_task->total_size = get_size_dir(current_task->path, current_task);
     assert(current_task->total_size > 0);
 
-    long long analyzing_size = analyzing(current_task->path, current_task->task_id, output_fd);
+    long long analyzing_size = analyzing(current_task->path, current_task, output_fd);
 
     assert(current_task->total_size == analyzing_size);
-    set_task_status(current_task->task_id, 1);
+    set_task_status(current_task, 1);
     return NULL;
 }
-void init_taks()
+struct task_details *init_task(int id)
 {
-    for (int i = 0; i < MAX_TASKS; i++)
+    struct task_details *task = (struct task_details *)malloc(sizeof(struct task_details));
+    task->task_id = id;
+    task->permission_mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+    task->status_mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+
+    if (task->permission_mutex == NULL || task->status_mutex == NULL)
     {
-        task[i] = (struct task_details *)malloc(sizeof(struct task_details));
-        task[i]->task_id = i;
-
-        if (pthread_mutex_init(&permission_mutex[i], NULL) != 0)
-        {
-            perror("Mutex init failed");
-            exit(1);
-        }
-
-        if (pthread_mutex_init(&status_mutex[i], NULL) != 0)
-        {
-            perror("Mutex init failed");
-            exit(1);
-        }
+        perror("Mutex allocation failed");
+        exit(1);
     }
-}
 
-void destroy_tasks()
-{
-    for (int i = 0; i < MAX_TASKS; i++)
+    if (pthread_mutex_init(task->permission_mutex, NULL) != 0)
     {
-        free(task[i]);
-        pthread_mutex_destroy(&permission_mutex[i]);
-        pthread_mutex_destroy(&status_mutex[i]);
+        perror("Mutex init failed");
+        exit(1);
     }
+
+    if (pthread_mutex_init(task->status_mutex, NULL) != 0)
+    {
+        perror("Mutex init failed");
+        exit(1);
+    }
+    return task;
 }
 
-void suspend_task(int id)
+void destroy_task(struct task_details *task)
 {
-    pthread_mutex_lock(&permission_mutex[id]);
+    pthread_mutex_destroy(task->permission_mutex);
+    pthread_mutex_destroy(task->status_mutex);
+    free(task->permission_mutex);
+    free(task->status_mutex);
+    free(task);
 }
 
-void resume_task(int id)
+void suspend_task(struct task_details *task)
 {
-    pthread_mutex_unlock(&permission_mutex[id]);
+    pthread_mutex_lock(task->permission_mutex);
+}
+
+void resume_task(struct task_details *task)
+{
+    pthread_mutex_unlock(task->permission_mutex);
+}
+
+void write_report_info(FILE *output_fd, const char *path, long long size, struct task_details *task)
+{
+    int depth = get_depth(task->path, path);
+    if (depth > 0 && depth <= 2)
+    {
+        fprintf(output_fd, "|-%s %0.2lf%% %lld\n", relative_path(path, depth), ((double)size / task->total_size) * 100,
+                size);
+    }
+    if (depth == 1)
+    {
+        fprintf(output_fd, "|\n");
+    }
+    if (depth == 0)
+    {
+        fprintf(output_fd, "%s %0.2lf%% %lld\n", path, ((double)size / task->total_size) * 100, size);
+    }
 }
