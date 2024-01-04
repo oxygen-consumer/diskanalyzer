@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 
         if (option == 'S' || option == 'R' || option == 'r' || option == 'i' || option == 'p') // option requires id
         {
-            msg.id = stringToInt(optarg);
+            msg.id = get_id(optarg);
             if (msg.id < 0)
             {
                 usage("Invalid ID");
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
                 usage("Path too long");
             }
 
-            if (!isValidDirectory(optarg))
+            if (!is_valid_directory(optarg))
             {
                 usage("Invalid path");
             }
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
                 usage("Option -P requires option -a first");
             }
 
-            msg.priority = getPriority(optarg);
+            msg.priority = get_priority(optarg);
             if (msg.priority == NO_PRIORITY)
             {
                 usage("Invalid priority");

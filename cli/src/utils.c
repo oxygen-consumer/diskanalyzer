@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int stringToInt(const char *str)
+int get_id(const char *str)
 {
     char *endptr;
     int result = (int)strtol(str, &endptr, 10);
@@ -17,7 +17,7 @@ int stringToInt(const char *str)
     return result;
 }
 
-bool isValidDirectory(const char *path)
+bool is_valid_directory(const char *path)
 {
     DIR *dir = opendir(path);
     if (dir)
@@ -31,7 +31,7 @@ bool isValidDirectory(const char *path)
     }
 }
 
-enum Priority getPriority(const char *str)
+enum Priority get_priority(const char *str)
 {
     if (strcmp(str, "low") == 0)
     {

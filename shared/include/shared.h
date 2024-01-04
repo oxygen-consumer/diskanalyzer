@@ -1,5 +1,6 @@
 #ifndef SHARED_H
 #define SHARED_H
+
 #include <constants.h>
 
 enum TaskCode
@@ -36,4 +37,5 @@ struct message
     int id;
     enum Priority priority;
 };
+
 #endif

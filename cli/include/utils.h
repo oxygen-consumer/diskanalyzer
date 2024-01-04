@@ -2,8 +2,8 @@
 
 #include <shared.h>
 
-int stringToInt(const char *str);
+int get_id(const char *str);
 
-bool isValidDirectory(const char *path);
+bool is_valid_directory(const char *path);
 
-enum Priority getPriority(const char *str);
+enum Priority get_priority(const char *str);
