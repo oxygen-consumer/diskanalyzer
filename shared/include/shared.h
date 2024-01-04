@@ -48,13 +48,15 @@ enum ResponseCode
     TASK_ALREADY_RUNNING_ERROR,     // cannot resume task that is already running
     NO_TASK_DONE_ERROR,             // cannot print analysis report for a task that is not done
     GENERAL_ERROR,                  // really bad things happened
+    NO_RESPONSE,                    // used as default value
 };
 
-struct response
+struct Response
 {
     enum ResponseCode response_code;
     char message[MAX_PATH_SIZE];
     // -a => (message=to_string(task_id), OK) | DIRECTOR_ALREADY_TRACKED_ERROR | GENERAL_ERROR
+    //    => e.g. message = "1\0" ; please note the null terminator
     // -S => OK | INVALID_ID_ERROR | TASK_ALREADY_FINISHED_ERROR | TASK_ALREADY_SUSPENDED_ERROR | GENERAL_ERROR
     // -R => OK | INVALID_ID_ERROR | TASK_ALREADY_FINISHED_ERROR | TASK_ALREADY_RUNNING_ERROR | GENERAL_ERROR
     // -r => OK | INVALID_ID_ERROR | GENERAL_ERROR
