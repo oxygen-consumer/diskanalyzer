@@ -85,6 +85,15 @@ int main(int argc, char *argv[])
             usage("Cannot add more than one task");
         }
 
+        if (option == 'S' || option == 'R' || option == 'r' || option == 'i' || option == 'p') // option requires id
+        {
+            msg.id = stringToInt(optarg);
+            if (msg.id < 0)
+            {
+                usage("Invalid ID");
+            }
+        }
+
         switch (option)
         {
         case 'a': {
@@ -121,41 +130,21 @@ int main(int argc, char *argv[])
         case 'S': {
             msg.task_code = SUSPEND;
 
-            msg.id = stringToInt(optarg);
-            if (msg.id < 0)
-            {
-                usage("Invalid ID");
-            }
             break;
         }
         case 'R': {
             msg.task_code = RESUME;
 
-            msg.id = stringToInt(optarg);
-            if (msg.id < 0)
-            {
-                usage("Invalid ID");
-            }
             break;
         }
         case 'r': {
             msg.task_code = REMOVE;
 
-            msg.id = stringToInt(optarg);
-            if (msg.id < 0)
-            {
-                usage("Invalid ID");
-            }
             break;
         }
         case 'i': {
             msg.task_code = INFO;
 
-            msg.id = stringToInt(optarg);
-            if (msg.id < 0)
-            {
-                usage("Invalid ID");
-            }
             break;
         }
         case 'l': {
@@ -165,11 +154,6 @@ int main(int argc, char *argv[])
         case 'p': {
             msg.task_code = PRINT;
 
-            msg.id = stringToInt(optarg);
-            if (msg.id < 0)
-            {
-                usage("Invalid ID");
-            }
             break;
         }
         default: {

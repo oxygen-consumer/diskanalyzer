@@ -1,7 +1,10 @@
 #include <utils.h>
 
+#include <shared.h>
+
 #include <dirent.h>
 #include <stdlib.h>
+#include <string.h>
 
 int stringToInt(const char *str)
 {
