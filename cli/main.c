@@ -208,16 +208,13 @@ int main(int argc, char *argv[])
     }
 
     /* FIXME:
-     * last 10 lines have NOT been tested
      * Receive the response from the server and print it to stdout.
      * The response is a struct error.
      * If the error_code is 0, then the operation was successful.
      * Otherwise, print the error_msg to stderr.
-     * Remember to close the socket.
+     * Remember to close the socket. ??
      * Return 0 if the operation was successful, 1 otherwise.
-     * Remember to handle the case when the server is not running.
-     *
-     * Hint: use recv() to receive the response.
+     * Remember to handle the case when the server is not running. ??
      */
     return 0;
 }
