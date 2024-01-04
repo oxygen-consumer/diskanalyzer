@@ -1,25 +1,46 @@
+#include <shared.h>
+
+#include <utils.h>
+
+#include <getopt.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
 
-int main(void)
+void usage(const char *message)
 {
-    /*
-     * FIXME: Send a test message to the server to test the connection.
-     */
+    if (message != NULL)
+    {
+        fprintf(stderr, "%s\n", message);
+    }
+    fprintf(stderr, "Usage: ./program [options]\n"
+                    "Options:\n"
+                    "  -a, --add <path>\t\t\tAnalyze directory\n"
+                    "  -P, --priority <low/normal/high>\tSet priority\n"
+                    "  -S, --suspend <id>\t\t\tSuspend task\n"
+                    "  -R, --resume <id>\t\t\tResume task\n"
+                    "  -r, --remove <id>\t\t\tRemove task\n"
+                    "  -i, --info <id>\t\t\tPrint task status\n"
+                    "  -l, --list\t\t\t\tList all analysis tasks\n"
+                    "  -p, --print <id>\t\t\tPrint task analysis report \n");
+    exit(EXIT_FAILURE);
+}
 
+int main(int argc, char *argv[])
+{
     // Socket preparation
-    const int BUF_SIZE = 4096;
+    // const int BUF_SIZE = 4096;
 
     char SV_SOCK_PATH[37];
     sprintf(SV_SOCK_PATH, "/var/run/user/%d/diskanalyzer.sock", getuid());
 
     struct sockaddr_un addr;
-    char buf[BUF_SIZE];
+    // char buf[BUF_SIZE];
     int sfd; // server fd
-    ssize_t nread;
+    // ssize_t nread;
 
     sfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sfd == -1)
@@ -39,14 +60,130 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    while ((nread = read(STDIN_FILENO, buf, BUF_SIZE)) > 0)
+    int option;
+    int option_index = 0;
+    static struct option long_options[] = {{"add", required_argument, NULL, 'a'},
+                                           {"priority", required_argument, NULL, 'P'},
+                                           {"suspend", required_argument, NULL, 'S'},
+                                           {"resume", required_argument, NULL, 'R'},
+                                           {"remove", required_argument, NULL, 'r'},
+                                           {"info", required_argument, NULL, 'i'},
+                                           {"list", no_argument, NULL, 'l'},
+                                           {"print", required_argument, NULL, 'p'},
+                                           {0, 0, 0, 0}};
+
+    struct message msg;
+    msg.task_code = NO_TASK;
+    msg.path[0] = '\0';
+    msg.id = -1;
+    msg.priority = NO_PRIORITY;
+
+    while ((option = getopt_long(argc, argv, "a:P:S:R:r:i:lp:", long_options, &option_index)) != -1)
     {
-        if (write(sfd, buf, nread) != nread)
+        if (msg.task_code != NO_TASK && option != 'P')
         {
-            perror("write");
-            exit(EXIT_FAILURE);
+            usage("Cannot add more than one task");
+        }
+
+        if (option == 'S' || option == 'R' || option == 'r' || option == 'i' || option == 'p') // option requires id
+        {
+            msg.id = get_id(optarg);
+            if (msg.id < 0)
+            {
+                usage("Invalid ID");
+            }
+        }
+
+        switch (option)
+        {
+        case 'a': {
+            msg.task_code = ADD;
+
+            if (strlen(optarg) > MAX_PATH_SIZE)
+            {
+                usage("Path too long");
+            }
+
+            if (!is_valid_directory(optarg))
+            {
+                usage("Invalid path");
+            }
+
+            realpath(optarg, msg.path); // convert to absolute path
+
+            msg.priority = MEDIUM; // default priority
+            break;
+        }
+        case 'P': {
+            if (msg.task_code != ADD)
+            {
+                usage("Option -P requires option -a first");
+            }
+
+            msg.priority = get_priority(optarg);
+            if (msg.priority == NO_PRIORITY)
+            {
+                usage("Invalid priority");
+            }
+            break;
+        }
+        case 'S': {
+            msg.task_code = SUSPEND;
+
+            break;
+        }
+        case 'R': {
+            msg.task_code = RESUME;
+
+            break;
+        }
+        case 'r': {
+            msg.task_code = REMOVE;
+
+            break;
+        }
+        case 'i': {
+            msg.task_code = INFO;
+
+            break;
+        }
+        case 'l': {
+            msg.task_code = LIST;
+            break;
+        }
+        case 'p': {
+            msg.task_code = PRINT;
+
+            break;
+        }
+        default: {
+            usage("Unknown option");
+            break;
+        }
         }
     }
 
+    if (msg.task_code == NO_TASK)
+    {
+        usage("No task specified");
+    }
+    ssize_t bytes_sent;
+    bytes_sent = send(sfd, &msg, sizeof(msg), 0);
+
+    if (bytes_sent == -1)
+    {
+        fprintf(stderr, "Failed to send message to server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* FIXME:
+     * Receive the response from the server and print it to stdout.
+     * The response is a struct error.
+     * If the error_code is 0, then the operation was successful.
+     * Otherwise, print the error_msg to stderr.
+     * Remember to close the socket. ??
+     * Return 0 if the operation was successful, 1 otherwise.
+     * Remember to handle the case when the server is not running. ??
+     */
     return 0;
 }
