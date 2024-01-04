@@ -1,4 +1,5 @@
 #include <shared.h>
+
 #include <utils.h>
 
 #include <getopt.h>
@@ -15,17 +16,17 @@ void usage(const char *message)
     {
         fprintf(stderr, "%s\n", message);
     }
-    fprintf(stderr, "Usage: ./program [options]\n");
-    fprintf(stderr, "Options:\n");
-    fprintf(stderr, "  -a, --add <path>\t\t\tAnalyze directory\n");
-    fprintf(stderr, "  -P, --priority <low/normal/high>\tSet priority\n");
-    fprintf(stderr, "  -S, --suspend <id>\t\t\tSuspend task\n");
-    fprintf(stderr, "  -R, --resume <id>\t\t\tResume task\n");
-    fprintf(stderr, "  -r, --remove <id>\t\t\tRemove task\n");
-    fprintf(stderr, "  -i, --info <id>\t\t\tPrint task status\n");
-    fprintf(stderr, "  -l, --list\t\t\t\tList all analysis tasks\n");
-    fprintf(stderr, "  -p, --print <id>\t\t\tPrint task analysis report \n");
-    exit(1);
+    fprintf(stderr, "Usage: ./program [options]\n"
+                    "Options:\n"
+                    "  -a, --add <path>\t\t\tAnalyze directory\n"
+                    "  -P, --priority <low/normal/high>\tSet priority\n"
+                    "  -S, --suspend <id>\t\t\tSuspend task\n"
+                    "  -R, --resume <id>\t\t\tResume task\n"
+                    "  -r, --remove <id>\t\t\tRemove task\n"
+                    "  -i, --info <id>\t\t\tPrint task status\n"
+                    "  -l, --list\t\t\t\tList all analysis tasks\n"
+                    "  -p, --print <id>\t\t\tPrint task analysis report \n");
+    exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[])

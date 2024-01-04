@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 int stringToInt(const char *str);
 
-int isValidDirectory(const char *path);
+bool isValidDirectory(const char *path);

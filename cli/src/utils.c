@@ -14,16 +14,16 @@ int stringToInt(const char *str)
     return result;
 }
 
-int isValidDirectory(const char *path)
+bool isValidDirectory(const char *path)
 {
     DIR *dir = opendir(path);
     if (dir)
     {
         closedir(dir);
-        return 1; // Valid directory
+        return true; // Valid directory
     }
     else
     {
-        return 0; // Not a directory or doesn't exist
+        return false; // Not a directory or doesn't exist
     }
 }
