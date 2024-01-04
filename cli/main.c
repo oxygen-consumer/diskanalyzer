@@ -31,10 +31,6 @@ void usage(const char *message)
 
 int main(int argc, char *argv[])
 {
-    /*
-     * FIXME: Send a test message to the server to test the connection.
-     */
-
     // Socket preparation
     // const int BUF_SIZE = 4096;
 
@@ -94,7 +90,7 @@ int main(int argc, char *argv[])
         case 'a': {
             msg.task_code = ADD;
 
-            if (strlen(optarg) > 255)
+            if (strlen(optarg) > MAX_PATH_SIZE)
             {
                 usage("Path too long");
             }
@@ -104,9 +100,9 @@ int main(int argc, char *argv[])
                 usage("Invalid path");
             }
 
-            realpath(optarg, msg.path);
+            realpath(optarg, msg.path); // convert to absolute path
 
-            msg.priority = MEDIUM;
+            msg.priority = MEDIUM; // default priority
             break;
         }
         case 'P': {
@@ -115,19 +111,8 @@ int main(int argc, char *argv[])
                 usage("Option -P requires option -a first");
             }
 
-            if (strcmp(optarg, "low") == 0)
-            {
-                msg.priority = LOW;
-            }
-            else if (strcmp(optarg, "normal") == 0)
-            {
-                msg.priority = MEDIUM;
-            }
-            else if (strcmp(optarg, "high") == 0)
-            {
-                msg.priority = HIGH;
-            }
-            else
+            msg.priority = getPriority(optarg);
+            if (msg.priority == NO_PRIORITY)
             {
                 usage("Invalid priority");
             }
