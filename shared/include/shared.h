@@ -61,7 +61,10 @@ struct Response
     // -R => OK | INVALID_ID_ERROR | TASK_ALREADY_FINISHED_ERROR | TASK_ALREADY_RUNNING_ERROR | GENERAL_ERROR
     // -r => OK | INVALID_ID_ERROR | GENERAL_ERROR
     // -i => (message=info_message, OK) | INVALID_ID_ERROR | GENERAL_ERROR
+    //    => e.g. message = "ID: 1\nPath: /home/user/Downloads\nPriority: normal\nStatus: running\nProgress: 75%: 69
+    //    dirs, 420 files\0" ; please note the null terminator
     // -l => (message=PATH_TO_message,OK) | GENERAL_ERROR
+    //    => e.g. message = "/tmp/analysis_report_1.txt\0" ; please note the null terminator
     // -p => (message=PATH_TO_message, OK) | NO_TASK_DONE_ERROR | GENERAL_ERROR
 };
 
