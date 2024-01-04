@@ -54,9 +54,8 @@ long long fsize(const char *filename)
 
     return 0;
 }
-/* Return a substring of the input path, starting from the depth-th '/' character from the end of the string.
- */
-char *get_relative_path_with_depth(const char *path, int depth)
+
+char *relative_path(const char *path, int depth)
 {
     int len = strlen(path);
     for (int i = len - 1; i >= 0; i--)
@@ -73,25 +72,49 @@ char *get_relative_path_with_depth(const char *path, int depth)
     return (char *)path;
 }
 
-/*  Directories "." and ".." are typically special entries in a
- * directory, and we want to skip them to avoid infinite loops.
- */
 int special_directory(char *d_name)
 {
     return strcmp(d_name, ".") == 0 || strcmp(d_name, "..") == 0;
 }
 
-void print_path_info(int depth, const char *path, long long total_size, long long size, FILE *output_fd)
+int get_depth(const char *path, const char *subpath)
 {
+    // Check if subpath starts with path
+    if (strncmp(path, subpath, strlen(path)) != 0)
+    {
+        return -1; // subpath is not a subpath of path
+    }
+
+    // Get the part of subpath after path
+    const char *relative_subpath = subpath + strlen(path);
+
+    // Count the number of '/' characters in relative_subpath
+    int depth = 0;
+    for (const char *p = relative_subpath; *p != '\0'; p++)
+    {
+        if (*p == '/')
+        {
+            depth++;
+        }
+    }
+
+    return depth;
+}
+
+void write_report_info(FILE *output_fd, const char *path, long long size, int id)
+{
+    int depth = get_depth(task[id]->path, path);
     if (depth > 0 && depth <= 2)
     {
-        printf("|-%s       %0.2lf%%          %lld\n", get_relative_path_with_depth(path, depth),
-               ((double)size / total_size) * 100, size);
-        fprintf(output_fd, "|-%s       %0.2lf%%          %lld\n", get_relative_path_with_depth(path, depth),
-                ((double)size / total_size) * 100, size);
+        fprintf(output_fd, "|-%s %0.2lf%% %lld\n", relative_path(path, depth),
+                ((double)size / task[id]->total_size) * 100, size);
     }
     if (depth == 1)
     {
         fprintf(output_fd, "|\n");
+    }
+    if (depth == 0)
+    {
+        fprintf(output_fd, "%s %0.2lf%% %lld\n", path, ((double)size / task[id]->total_size) * 100, size);
     }
 }

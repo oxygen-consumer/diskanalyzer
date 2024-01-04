@@ -1,3 +1,4 @@
+#include <analyzer.h>
 #include <daemonize.h>
 #include <utils.h>
 
@@ -10,6 +11,41 @@
 #include <sys/un.h>
 #include <syslog.h>
 #include <unistd.h>
+
+int simulate()
+{
+    init_taks();
+    int result;
+    for (int i = 0; i < MAX_TASKS; i++)
+    {
+        strcpy(task[i]->path, "/home/ionut/diskanalyzer");
+        result = pthread_create(&threads[i], NULL, start_analyses_thread, task[i]);
+        if (result != 0)
+        {
+            perror("Thread creation failed");
+            return 1;
+        }
+    }
+
+    int id_selectat = 0;
+    suspend_task(id_selectat);
+    sleep(1);
+    printf("id_selectat = %d\n", id_selectat);
+    resume_task(id_selectat);
+
+    for (int i = 0; i < MAX_TASKS; i++)
+    {
+        result = pthread_join(threads[i], NULL);
+        if (result != 0)
+        {
+            perror("Thread join failed");
+            return 1;
+        }
+        // printf("Main thread %d finished.\n", i);
+    }
+    destroy_tasks();
+    return 0;
+}
 
 int main(void)
 {

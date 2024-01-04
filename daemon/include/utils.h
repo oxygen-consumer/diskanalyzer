@@ -37,16 +37,17 @@ void add_to_path(const char *current_path, const char *add_path, char *ans);
  */
 long long fsize(const char *filename);
 
-/* return a substring of the input path, starting from the depth-th '/'
- * character from the end of the string.
+/* Return a substring of the input path, starting from the depth-th '/' character from the end of the string.
  */
-char *get_relative_path_with_depth(const char *path, int depth);
+char *relative_path(const char *path, int depth);
 
 /*  Directories "." and ".." are typically special entries in a
  * directory, and we want to skip them to avoid infinite loops.
  */
 int special_directory(char *d_name);
 
-void print_path_info(int depth, const char *path, long long total_size, long long size, FILE *output_fd);
+int get_depth(const char *path, const char *subpath);
+
+void write_report_info(FILE *output_fd, const char *path, long long size, int id);
 
 #endif
