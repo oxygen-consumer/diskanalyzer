@@ -1,4 +1,5 @@
 
+#include <shared.h>
 #include <stdlib.h>
 #include <syslog.h>
 #include <task.h>
@@ -21,13 +22,13 @@ void permission_to_continue(struct task_details *task)
     pthread_mutex_unlock(task->permission_mutex);
 }
 
-struct task_details *init_task(int id, char *path, int priority)
+struct task_details *init_task(int id, char *path, enum Priority priority)
 {
     struct task_details *task = (struct task_details *)malloc(sizeof(struct task_details));
     task->task_id = id;
     strcpy(task->path, path);
     task->priority = priority;
-    task->status = 0;
+    task->status = NOT_STARTED;
     task->dirs = 0;
     task->files = 0;
     task->total_size = 0;

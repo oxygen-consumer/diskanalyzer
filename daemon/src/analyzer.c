@@ -1,4 +1,6 @@
 #include <analyzer.h>
+#include <task.h>
+#include <utils.h>
 
 #include <assert.h>
 #include <dirent.h>
@@ -11,7 +13,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <syslog.h>
-#include <utils.h>
 
 void check_or_exit_thread(int ok, struct task_details *task, const char *msg)
 {
@@ -20,12 +21,12 @@ void check_or_exit_thread(int ok, struct task_details *task, const char *msg)
     {
         syslog(LOG_ERR, "%s", msg);
         perror(msg);
-        set_task_status(task, -1);
+        set_task_status(task, ERROR);
         pthread_exit(NULL);
     }
 }
 
-void set_task_status(struct task_details *task, int status)
+void set_task_status(struct task_details *task, enum Status status)
 {
     pthread_mutex_lock(task->status_mutex);
     task->status = status;
@@ -103,6 +104,7 @@ long long analyzing(const char *path, struct task_details *task, FILE *output_fd
 void *start_analyses_thread(void *arg)
 {
     struct task_details *current_task = (struct task_details *)arg;
+    set_task_status(current_task, RUNNING);
 
     check_or_exit_thread(current_task->path != NULL, current_task, "NULL path");
     check_or_exit_thread(current_task->path[0] != '\0', current_task, "Empty path");
@@ -122,7 +124,7 @@ void *start_analyses_thread(void *arg)
     long long analyzing_size = analyzing(current_task->path, current_task, output_fd);
     fclose(output_fd);
     check_or_exit_thread(analyzing_size == current_task->total_size, current_task, "Different sizes");
-    set_task_status(current_task, 1);
+    set_task_status(current_task, FINISHED);
     return NULL;
 }
 
