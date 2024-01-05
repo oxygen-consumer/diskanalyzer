@@ -44,7 +44,9 @@ void die(bool ok, const char *msg, ...)
         syslog(LOG_USER | LOG_WARNING, "Unable to remove the socket file located at %s.", SV_SOCK_PATH);
     }
 
-    if (rmrf("/var/run/user/1000/da_tasks")) 
+    char path[50];
+    sprintf(path, "/var/run/user/%d/da_tasks", getuid());
+    if (rmrf(path)) 
     {
         syslog(LOG_WARNING, "Failed to delete tasks directory.");
     }
