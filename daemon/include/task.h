@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_TASKS 2
+#define MAX_TASKS 100
 
 struct task_details
 {

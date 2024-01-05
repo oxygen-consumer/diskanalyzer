@@ -60,7 +60,12 @@ int main(void)
     }
 
     // Create tasks directory
-    mkdir("/var/run/user/%d/da_tasks", getuid());
+    char TASKS_DIR[50];
+    sprintf(TASKS_DIR, "/var/run/user/%d/da_tasks", getuid());
+    if (mkdir(TASKS_DIR, 0777) == -1)
+    {
+        die(false, "Unable to create tasks directory. Exiting.");
+    }
 
     // Socket preparation
     const int BACKLOG = 16, BUF_SIZE = 4096;
@@ -77,6 +82,7 @@ int main(void)
     int used_tasks[MAX_TASKS];
     for (int i = 0; i < MAX_TASKS; ++i)
     {
+        threads[i] = 0;
         task[i] = NULL;
         used_tasks[i] = 0;
     }
@@ -127,7 +133,7 @@ int main(void)
                 if (task[i] != NULL && (task[i]->status == FINISHED || task[i]->status == ERROR))
                 {
                     pthread_join(threads[i], NULL);
-                    destroy_task(task[i]);
+                    // destroy_task(task[i]);
                     task[i] = NULL;
                     used_tasks[i] = 0;
                 }
@@ -269,7 +275,7 @@ int main(void)
                 break;
 
             case PRINT:
-                snprintf(thread_output, MAX_PATH_SIZE, "/var/rub/user/%d/da_tasks/task_%d.info", getuid(), msg.id);
+                snprintf(thread_output, MAX_PATH_SIZE, "/var/run/user/%d/da_tasks/task_%d.info", getuid(), msg.id);
                 FILE *output_fd = fopen(thread_output, "w");
                 if (output_fd == NULL)
                 {
