@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <shared.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,5 +48,7 @@ char *relative_path(const char *path, int depth);
 int special_directory(char *d_name);
 
 int get_depth(const char *path, const char *subpath);
+
+void syslog_message(const struct message *msg);
 
 #endif
