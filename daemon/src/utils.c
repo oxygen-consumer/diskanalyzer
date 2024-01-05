@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <ftw.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -12,7 +13,46 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
-#include <ftw.h>
+
+void delete_directory_and_contents(const char *path)
+{
+
+    if (path == NULL)
+    {
+        return;
+    }
+
+    DIR *dir = opendir(path);
+    if (dir == NULL)
+    {
+        return;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+        {
+            continue;
+        }
+
+        char entry_path[PATH_MAX];
+        snprintf(entry_path, sizeof(entry_path), "%s/%s", path, entry->d_name);
+
+        if (entry->d_type == DT_DIR)
+        {
+            delete_directory_and_contents(entry_path);
+            rmdir(entry_path);
+        }
+        else
+        {
+            remove(entry_path);
+        }
+    }
+
+    closedir(dir);
+    rmdir(path);
+}
 
 void die(bool ok, const char *msg, ...)
 {
@@ -27,7 +67,7 @@ void die(bool ok, const char *msg, ...)
         syslog(LOG_USER | LOG_WARNING, "Unable to remove the socket file located at %s.", SV_SOCK_PATH);
     }
 
-    // TODO: Remove tasks directory recursively
+    delete_directory_and_contents("/var/run/user/1000/da_tasks");
 
     closelog();
     exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
@@ -126,7 +166,8 @@ void syslog_message(const struct message *msg)
         break;
     }
 
-    syslog(LOG_INFO, "Received - Task Code: %s, Path: %s, ID: %d, Priority: %s", taskCode, msg->path, msg->id, priority);
+    syslog(LOG_INFO, "Received - Task Code: %s, Path: %s, ID: %d, Priority: %s", taskCode, msg->path, msg->id,
+           priority);
 }
 
 int get_depth(const char *path, const char *subpath)
