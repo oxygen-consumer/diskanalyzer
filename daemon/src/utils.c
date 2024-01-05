@@ -73,7 +73,7 @@ char *relative_path(const char *path, int depth)
 
 int special_directory(char *d_name)
 {
-    return strcmp(d_name, ".") == 0 || strcmp(d_name, "..") == 0;
+    return strcmp(d_name, ".") == 0 || strcmp(d_name, "..") == 0 || d_name[0] == '.'; // also hidden files atm
 }
 
 int get_depth(const char *path, const char *subpath)
