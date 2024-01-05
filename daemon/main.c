@@ -26,6 +26,7 @@ int get_unused_task(int used_tasks[MAX_TASKS])
     }
     return -1;
 }
+
 /*
 `SCHED_OTHER (0):** This is the default scheduling policy for threads. Threads with this policy are scheduled in a
 round-robin fashion, with higher priority threads getting more CPU time. The priority range for this policy is from 0

@@ -24,19 +24,23 @@ struct task_details
 
 void output_task(struct task_details *task);
 
-/* Check the permission mutex.
+/*
+ * Check the permission mutex.
  */
 void permission_to_continue(struct task_details *task);
 
-/* Change task status.
+/*
+ * Change task status.
  */
 void set_task_status(struct task_details *task, enum Status status);
 
-/*  Return a new task with the given id, path and priority.
+/*
+ * Return a new task with the given id, path and priority.
  */
 struct task_details *init_task(int id, char *path, enum Priority priority);
 
-/*  Free the memory allocated for the task.
+/*
+ * Free the memory allocated for the task.
  */
 void destroy_task(struct task_details *task);
 
