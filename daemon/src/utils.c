@@ -1,5 +1,7 @@
 #include <utils.h>
 
+#define __USE_XOPEN_EXTENDED
+
 #include <assert.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -14,44 +16,19 @@
 #include <syslog.h>
 #include <unistd.h>
 
-void delete_directory_and_contents(const char *path)
+int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
 {
+    int rv = remove(fpath);
 
-    if (path == NULL)
-    {
-        return;
-    }
+    if (rv)
+        perror(fpath);
 
-    DIR *dir = opendir(path);
-    if (dir == NULL)
-    {
-        return;
-    }
+    return rv;
+}
 
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL)
-    {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-        {
-            continue;
-        }
-
-        char entry_path[PATH_MAX];
-        snprintf(entry_path, sizeof(entry_path), "%s/%s", path, entry->d_name);
-
-        if (entry->d_type == DT_DIR)
-        {
-            delete_directory_and_contents(entry_path);
-            rmdir(entry_path);
-        }
-        else
-        {
-            remove(entry_path);
-        }
-    }
-
-    closedir(dir);
-    rmdir(path);
+int rmrf(const char *path)
+{
+        return nftw(path, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
 }
 
 void die(bool ok, const char *msg, ...)
@@ -67,7 +44,10 @@ void die(bool ok, const char *msg, ...)
         syslog(LOG_USER | LOG_WARNING, "Unable to remove the socket file located at %s.", SV_SOCK_PATH);
     }
 
-    delete_directory_and_contents("/var/run/user/1000/da_tasks");
+    if (rmrf("/var/run/user/1000/da_tasks")) 
+    {
+        syslog(LOG_WARNING, "Failed to delete tasks directory.");
+    }
 
     closelog();
     exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
