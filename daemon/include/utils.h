@@ -45,4 +45,6 @@ int special_directory(char *d_name);
 
 void syslog_message(const struct message *msg);
 
+int get_depth(const char *path, const char *subpath);
+
 #endif

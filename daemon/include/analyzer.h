@@ -21,7 +21,7 @@ long long get_size_dir(const char *path, struct task_details *task);
 /*
  * Writes the analyze report to the file descriptor.
  */
-long long analyzing(const char *path, struct task_details *task);
+long long analyzing(const char *path, struct task_details *task, FILE *output_fd);
 
 /*
  * Start the thread report.
@@ -31,5 +31,8 @@ void *start_analyses_thread(void *arg);
 int directory_exists(const char *path);
 
 void check_or_exit_thread(int ok, struct task_details *task, const char *msg);
+
+
+void write_report_info(FILE *output_fd, const char *path, long long size, struct task_details *task);
 
 #endif // ANALYZER_H

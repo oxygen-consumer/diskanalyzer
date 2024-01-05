@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <ftw.h>
 
 void die(bool ok, const char *msg, ...)
 {
@@ -25,6 +26,8 @@ void die(bool ok, const char *msg, ...)
     {
         syslog(LOG_USER | LOG_WARNING, "Unable to remove the socket file located at %s.", SV_SOCK_PATH);
     }
+
+    // TODO: Remove tasks directory recursively
 
     closelog();
     exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
@@ -124,4 +127,28 @@ void syslog_message(const struct message *msg)
     }
 
     syslog(LOG_INFO, "Received - Task Code: %s, Path: %s, ID: %d, Priority: %s", taskCode, msg->path, msg->id, priority);
+}
+
+int get_depth(const char *path, const char *subpath)
+{
+    // Check if subpath starts with path
+    if (strncmp(path, subpath, strlen(path)) != 0)
+    {
+        return -1; // subpath is not a subpath of path
+    }
+
+    // Get the part of subpath after path
+    const char *relative_subpath = subpath + strlen(path);
+
+    // Count the number of '/' characters in relative_subpath
+    int depth = 0;
+    for (const char *p = relative_subpath; *p != '\0'; p++)
+    {
+        if (*p == '/')
+        {
+            depth++;
+        }
+    }
+
+    return depth;
 }

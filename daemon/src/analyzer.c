@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <syslog.h>
+#include <unistd.h>
 
 void check_or_exit_thread(int ok, struct task_details *task, const char *msg)
 {
@@ -60,7 +61,7 @@ long long get_size_dir(const char *path, struct task_details *task)
     return size;
 }
 
-long long analyzing(const char *path, struct task_details *task)
+long long analyzing(const char *path, struct task_details *task, FILE *output_fd)
 {
     permission_to_continue(task);
 
@@ -89,11 +90,12 @@ long long analyzing(const char *path, struct task_details *task)
         else if (S_ISDIR(file_stat.st_mode))
         {
             size += fsize(sub_path);
-            size += analyzing(sub_path, task);
+            size += analyzing(sub_path, task, output_fd);
             task->dirs += 1;
         }
     }
     check_or_exit_thread(closedir(directory) == 0, task, "Error closing directory");
+    write_report_info(output_fd, path, size, task);
     return size;
 }
 
@@ -110,11 +112,11 @@ void *start_analyses_thread(void *arg)
     check_or_exit_thread(current_task->total_size != 0, current_task, "Total size = 0");
 
     char thread_output[MAX_PATH_SIZE];
-    snprintf(thread_output, MAX_PATH_SIZE, "/tmp/diskanalyzer_%d.txt", current_task->task_id);
+    snprintf(thread_output, MAX_PATH_SIZE, "/var/run/user/%d/da_tasks/tree_%d", getuid(), current_task->task_id);
     FILE *output_fd = fopen(thread_output, "w");
     check_or_exit_thread(output_fd != NULL, current_task, "Error opening output file");
 
-    long long analyzing_size = analyzing(current_task->path, current_task);
+    long long analyzing_size = analyzing(current_task->path, current_task, output_fd);
     fclose(output_fd);
     check_or_exit_thread(analyzing_size == current_task->total_size, current_task, "Different sizes");
     set_task_status(current_task, FINISHED);
@@ -141,4 +143,23 @@ int directory_exists(const char *path)
 
     // Check if the path is a directory
     return S_ISDIR(statbuf.st_mode);
+}
+
+void write_report_info(FILE *output_fd, const char *path, long long size, struct task_details *task)
+{
+    int depth = get_depth(task->path, path);
+    if (depth > 0 && depth <= 2)
+    {
+        fprintf(output_fd, "|-%s | %0.2lf%% | %lld bytes | %d files | %d dirs\n", relative_path(path, depth),
+                ((double)size / task->total_size) * 100, size, task->files, task->dirs);
+    }
+    if (depth == 1)
+    {
+        fprintf(output_fd, "|\n");
+    }
+    if (depth == 0)
+    {
+        fprintf(output_fd, "%s | %0.2lf%% | %lld bytes | %d files | %d dirs\n", path,
+                ((double)size / task->total_size) * 100, size, task->files, task->dirs);
+    }
 }

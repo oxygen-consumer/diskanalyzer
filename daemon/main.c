@@ -59,6 +59,9 @@ int main(void)
         die(false, "Unable to start daemon. Exiting.");
     }
 
+    // Create tasks directory
+    mkdir("/var/run/user/%d/da_tasks", getuid());
+
     // Socket preparation
     const int BACKLOG = 16, BUF_SIZE = 4096;
 
@@ -266,7 +269,6 @@ int main(void)
                 break;
 
             case PRINT:
-                mkdir("/var/run/user/%d/da_tasks", getuid());
                 snprintf(thread_output, MAX_PATH_SIZE, "/var/rub/user/%d/da_tasks/task_%d.info", getuid(), msg.id);
                 FILE *output_fd = fopen(thread_output, "w");
                 if (output_fd == NULL)
