@@ -2,19 +2,12 @@
 #define TASK_H
 
 #include <pthread.h>
+#include <shared.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define MAX_PATH_LENGTH 100
 #define MAX_TASKS 2
-
-enum Status
-{
-    NOT_STARTED,
-    RUNNING,
-    SUSPEND,
-    FINISHED,
-    ERROR,
-};
 
 struct task_details
 {

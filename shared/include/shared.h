@@ -68,4 +68,13 @@ struct Response
     // -p => (message=PATH_TO_message, OK) | NO_TASK_DONE_ERROR | GENERAL_ERROR
 };
 
+enum Status
+{
+    NOT_STARTED,
+    RUNNING,
+    PAUSED,
+    FINISHED,
+    ERROR,
+};
+
 #endif
