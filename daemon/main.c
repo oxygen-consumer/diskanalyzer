@@ -86,7 +86,7 @@ int main(void)
         task[i] = NULL;
         used_tasks[i] = 0;
     }
-    int i = 0;
+    int next_id = 1;
 
     // used for print, to be deleted after
     char thread_output[MAX_OUTPUT_SIZE];
@@ -126,14 +126,12 @@ int main(void)
         // Handle every incomming connection
         for (;;)
         {
-            // remove finished tasks (status == error and status = finished)
-            // idk if we need to delete them or just keep them in memory for list and print
+            // Check if any thread has finished
             for (int i = 0; i < MAX_TASKS; ++i)
             {
                 if (task[i] != NULL && (task[i]->status == FINISHED || task[i]->status == ERROR))
                 {
                     pthread_join(threads[i], NULL);
-                    // destroy_task(task[i]);
                     task[i] = NULL;
                     used_tasks[i] = 0;
                 }
@@ -147,17 +145,16 @@ int main(void)
             }
 
             struct message msg;
-            while ((nread = read(cfd, &msg, sizeof(msg))) > 0)
-            {
-                syslog_message(&msg);
-            }
 
-            if (nread == -1)
+            int bytes_received = recv(cfd, &msg, sizeof(msg), 0);
+            if (bytes_received == -1)
             {
-                syslog(LOG_USER | LOG_WARNING, "Failed to read from socket.");
+                syslog(LOG_USER | LOG_WARNING, "Failed to receive message.");
                 close(cfd);
                 continue;
             }
+
+            syslog_message(&msg);
 
             if (close(cfd) == -1)
             {
@@ -167,27 +164,28 @@ int main(void)
 
             switch (msg.task_code)
             {
-            case ADD:
-                i = get_unused_task(used_tasks);
-                if (i == -1)
+            case ADD: {
+                int thread_id = get_unused_task(used_tasks);
+                if (thread_id == -1)
                 {
                     syslog(LOG_USER | LOG_WARNING, "No more tasks available.");
                     break;
                 }
-                task[i] = init_task(i, msg.path, msg.priority);
-                if (task[i] == NULL)
+                task[thread_id] = init_task(next_id++, msg.path, msg.priority);
+                if (task[thread_id] == NULL)
                 {
                     syslog(LOG_USER | LOG_WARNING, "Failed to create task.");
                     break;
                 }
-                if (pthread_create(&threads[i], NULL, start_analyses_thread, task[i]) != 0)
+                if (pthread_create(&threads[thread_id], NULL, start_analyses_thread, task[thread_id]) != 0)
                 {
                     syslog(LOG_USER | LOG_WARNING, "Failed to create thread.");
                     break;
                 }
-                used_tasks[i] = 1;
+                used_tasks[thread_id] = 1;
                 syslog(LOG_USER | LOG_WARNING, "Created thread.");
                 break;
+            }
 
             case PRIORITY:
                 if (task[msg.id] != NULL)
