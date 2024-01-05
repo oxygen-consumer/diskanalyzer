@@ -1,4 +1,4 @@
-#define MAX_PATH_SIZE 16384
+#define MAX_PATH_SIZE 256
 
 #define MAX_ERROR_MSG_SIZE 256
 

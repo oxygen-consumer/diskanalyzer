@@ -89,7 +89,7 @@ int main(void)
     int i = 0;
 
     // used for print, to be deleted after
-    char thread_output[MAX_PATH_SIZE];
+    char thread_output[MAX_OUTPUT_SIZE];
     char buffer[1024];
 
     sfd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -275,7 +275,7 @@ int main(void)
                 break;
 
             case PRINT:
-                snprintf(thread_output, MAX_PATH_SIZE, "/var/run/user/%d/da_tasks/task_%d.info", getuid(), msg.id);
+                snprintf(thread_output, MAX_OUTPUT_SIZE, "/var/run/user/%d/da_tasks/task_%d.info", getuid(), msg.id);
                 FILE *output_fd = fopen(thread_output, "w");
                 if (output_fd == NULL)
                 {
