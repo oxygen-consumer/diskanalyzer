@@ -119,7 +119,7 @@ void *start_analyses_thread(void *arg)
     FILE *output_fd = fopen(thread_output, "w");
     check_or_exit_thread(output_fd != NULL, current_task, "Error opening output file");
 
-    sleep(60);
+    // sleep(15);
 
     long long analyzing_size = analyzing(current_task->path, current_task, output_fd);
     fclose(output_fd);
