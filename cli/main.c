@@ -177,13 +177,81 @@ int main(int argc, char *argv[])
     }
 
     /* FIXME:
-     * Receive the response from the server and print it to stdout.
-     * The response is a struct error.
-     * If the error_code is 0, then the operation was successful.
-     * Otherwise, print the error_msg to stderr.
-     * Remember to close the socket. ??
-     * Return 0 if the operation was successful, 1 otherwise.
-     * Remember to handle the case when the server is not running. ??
+
      */
+
+    struct Response response;
+    response.response_code = NO_RESPONSE;
+    response.message[0] = '\0';
+    ssize_t bytes_received;
+
+    // JUST FOR TESTING
+    bytes_received = recv(sfd, &msg, sizeof(response), 0);
+    // bytes_received = 1;
+    // response.response_code = OK;
+    // strcpy(response.message, "/home/sebi/Desktop/temaa/ghizi.cpp");
+    // END OF TESTING
+    //
+    if (bytes_received <= 0)
+    {
+        fprintf(stderr, "Failed to receive response from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (response.response_code != OK)
+    {
+        fprintf(stderr, "Server responded with error code %s.\n", response_code_to_string(response.response_code));
+        exit(EXIT_FAILURE);
+    }
+
+    switch (msg.task_code)
+    {
+    case ADD: {
+        int id = get_id(response.message);
+        if (id < 0)
+        {
+            fprintf(stderr, "Received invalid task ID from server\n");
+            exit(EXIT_FAILURE);
+        }
+        printf("Created analysis task with ID \'%d\' for \'%s\' and priority \'%s\'.\n", id, msg.path,
+               priority_to_string(msg.priority));
+
+        break;
+    }
+    case SUSPEND: {
+        printf("Suspended analysis task with ID \'%d\'.\n", msg.id);
+        break;
+    }
+    case RESUME: {
+        printf("Resumed analysis task with ID \'%d\'.\n", msg.id);
+        break;
+    }
+    case REMOVE: {
+        printf("Removed analysis task with ID \'%d\'.\n", msg.id);
+        break;
+    }
+    case INFO: {
+        printf("%s\n", response.message);
+        break;
+    }
+    case LIST: {
+        char *message = read_from_path(response.message);
+        printf("%s\n", message);
+        free(message);
+        break;
+    }
+    case PRINT: {
+        char *message = read_from_path(response.message);
+        printf("%s\n", message);
+        free(message);
+        break;
+    }
+    default: {
+        fprintf(stderr, "Something went wrong\n");
+        exit(EXIT_FAILURE);
+        break;
+    }
+    }
+
     return 0;
 }
