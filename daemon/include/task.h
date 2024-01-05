@@ -1,19 +1,20 @@
 #ifndef TASK_H
 #define TASK_H
 
+#include <constants.h>
+
 #include <pthread.h>
 #include <shared.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_PATH_LENGTH 100
 #define MAX_TASKS 2
 
 struct task_details
 {
     int task_id;
     int files, dirs;
-    char path[MAX_PATH_LENGTH];
+    char path[MAX_PATH_SIZE];
     long long total_size;
     enum Priority priority;
     enum Status status;

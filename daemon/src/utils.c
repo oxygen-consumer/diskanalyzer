@@ -30,8 +30,6 @@ void die(bool ok, const char *msg, ...)
     exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
-/* Merge current_path and add_path in ans
- */
 void add_to_path(const char *current_path, const char *add_path, char *ans)
 {
     strcpy(ans, current_path);
@@ -42,9 +40,6 @@ void add_to_path(const char *current_path, const char *add_path, char *ans)
     strcat(ans, add_path);
 }
 
-/* Get size of an file/directory.
- * Returns 0 if something went wrong.
- */
 long long fsize(const char *filename)
 {
     struct stat st;
@@ -75,30 +70,6 @@ char *relative_path(const char *path, int depth)
 int special_directory(char *d_name)
 {
     return strcmp(d_name, ".") == 0 || strcmp(d_name, "..") == 0 || d_name[0] == '.'; // also hidden files atm
-}
-
-int get_depth(const char *path, const char *subpath)
-{
-    // Check if subpath starts with path
-    if (strncmp(path, subpath, strlen(path)) != 0)
-    {
-        return -1; // subpath is not a subpath of path
-    }
-
-    // Get the part of subpath after path
-    const char *relative_subpath = subpath + strlen(path);
-
-    // Count the number of '/' characters in relative_subpath
-    int depth = 0;
-    for (const char *p = relative_subpath; *p != '\0'; p++)
-    {
-        if (*p == '/')
-        {
-            depth++;
-        }
-    }
-
-    return depth;
 }
 
 void syslog_message(const struct message *msg)
@@ -152,5 +123,5 @@ void syslog_message(const struct message *msg)
         break;
     }
 
-    syslog(LOG_INFO, "Task Code: %s, Path: %s, ID: %d, Priority: %s", taskCode, msg->path, msg->id, priority);
+    syslog(LOG_INFO, "Received - Task Code: %s, Path: %s, ID: %d, Priority: %s", taskCode, msg->path, msg->id, priority);
 }

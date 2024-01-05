@@ -1,4 +1,5 @@
 #include <analyzer.h>
+#include <constants.h>
 #include <daemonize.h>
 #include <shared.h>
 #include <utils.h>
@@ -78,9 +79,8 @@ int main(void)
     int i = 0;
 
     // used for print, to be deleted after
-    char thread_output[MAX_PATH_LENGTH];
+    char thread_output[MAX_PATH_SIZE];
     char buffer[1024];
-    //
 
     sfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sfd == -1)
@@ -136,11 +136,6 @@ int main(void)
                 continue;
             }
 
-            /*
-             * FIXME: For now we print everything to syslog,
-             * for test purposes.
-             * We will need a function to process them accordingly.
-             */
             struct message msg;
             while ((nread = read(cfd, &msg, sizeof(msg))) > 0)
             {
@@ -150,6 +145,7 @@ int main(void)
             if (nread == -1)
             {
                 syslog(LOG_USER | LOG_WARNING, "Failed to read from socket.");
+                close(cfd);
                 continue;
             }
 
@@ -158,7 +154,7 @@ int main(void)
                 syslog(LOG_USER | LOG_WARNING, "Failed to close connetion.");
                 continue;
             }
-            syslog(LOG_USER | LOG_WARNING, "start switch");
+
             switch (msg.task_code)
             {
             case ADD:
@@ -182,6 +178,7 @@ int main(void)
                 used_tasks[i] = 1;
                 syslog(LOG_USER | LOG_WARNING, "Created thread.");
                 break;
+
             case PRIORITY:
                 if (task[msg.id] != NULL)
                 {
@@ -192,6 +189,7 @@ int main(void)
                     syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
                 }
                 break;
+
             case SUSPEND:
                 if (task[msg.id] != NULL)
                 {
@@ -202,6 +200,7 @@ int main(void)
                     syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
                 }
                 break;
+
             case RESUME:
                 if (task[msg.id] != NULL)
                 {
@@ -212,6 +211,7 @@ int main(void)
                     syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
                 }
                 break;
+
             case REMOVE:
                 if (task[msg.id] != NULL)
                 {
@@ -252,24 +252,21 @@ int main(void)
             case INFO:
                 if (task[msg.id] != NULL)
                 {
-                    output_task(task[msg.id]);
+                    // TODO:
                 }
                 else
                 {
                     syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
                 }
                 break;
+
             case LIST:
-                for (int i = 0; i < MAX_TASKS; ++i)
-                {
-                    if (task[i] != NULL)
-                    {
-                        output_task(task[i]);
-                    }
-                }
+                // TODO:
                 break;
+
             case PRINT:
-                snprintf(thread_output, MAX_PATH_LENGTH, "/tmp/diskanalyzer_%d.txt", msg.id);
+                mkdir("/var/run/user/%d/da_tasks", getuid());
+                snprintf(thread_output, MAX_PATH_SIZE, "/var/rub/user/%d/da_tasks/task_%d.info", getuid(), msg.id);
                 FILE *output_fd = fopen(thread_output, "w");
                 if (output_fd == NULL)
                 {
@@ -284,6 +281,7 @@ int main(void)
 
                 fclose(output_fd);
                 break;
+
             default:
                 syslog(LOG_USER | LOG_WARNING, "Invalid task code.");
                 break;
@@ -297,45 +295,3 @@ int main(void)
 
     die(false, "Something really bad happened. Exiting.");
 }
-
-// int main()
-// {
-//     pthread_t threads[MAX_TASKS];
-//     struct task_details *task[MAX_TASKS];
-//     for (int i = 0; i < MAX_TASKS; ++i)
-//     {
-//         task[i] = init_task(i);
-//     }
-
-//     int result;
-//     for (int i = 0; i < MAX_TASKS; i++)
-//     {
-//         strcpy(task[i]->path, "/home/");
-//         result = pthread_create(&threads[i], NULL, start_analyses_thread, task[i]);
-//         if (result != 0)
-//         {
-//             perror("Thread creation failed");
-//             return 1;
-//         }
-//     }
-
-//     int id_selectat = 0;
-//     suspend_task(task[id_selectat]);
-//     sleep(1);
-//     printf("id_selectat = %d\n", id_selectat);
-//     resume_task(task[id_selectat]);
-
-//     for (int i = 0; i < MAX_TASKS; i++)
-//     {
-//         result = pthread_join(threads[i], NULL);
-//         if (result != 0)
-//         {
-//             perror("Thread join failed");
-//             return 1;
-//         }
-//         // printf("Main thread %d finished.\n", i);
-//         destroy_task(task[i]);
-//     }
-
-//     return 0;
-// }

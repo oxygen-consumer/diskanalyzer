@@ -1,20 +1,7 @@
-
-
 #include <stdlib.h>
+#include <string.h>
 #include <syslog.h>
 #include <task.h>
-
-void output_task(struct task_details *task)
-{
-
-    syslog(LOG_INFO, "Task id: %d", task->task_id);
-    syslog(LOG_INFO, "Task status: %d", task->status);
-    syslog(LOG_INFO, "Task priority: %d", task->priority);
-    syslog(LOG_INFO, "Task files: %d", task->files);
-    syslog(LOG_INFO, "Task dirs: %d", task->dirs);
-    syslog(LOG_INFO, "Task path: %s", task->path);
-    syslog(LOG_INFO, "Task total_size: %lld", task->total_size);
-}
 
 void permission_to_continue(struct task_details *task)
 {
@@ -69,7 +56,6 @@ void destroy_task(struct task_details *task)
 
 void suspend_task(struct task_details *task)
 {
-
     pthread_mutex_lock(task->permission_mutex);
     syslog(LOG_INFO, "Task %d suspended.", task->task_id);
 }

@@ -13,19 +13,20 @@
 #include <syslog.h>
 #include <task.h>
 
-/* Returns the size of a directory (including subdirectories).
+/*
+ * Returns the size of a directory (including subdirectories).
  */
 long long get_size_dir(const char *path, struct task_details *task);
 
-/* Writes the analyze report to the file descriptor.
+/*
+ * Writes the analyze report to the file descriptor.
  */
-long long analyzing(const char *path, struct task_details *task, FILE *output_fd);
+long long analyzing(const char *path, struct task_details *task);
 
-/* Start the thread report.
+/*
+ * Start the thread report.
  */
 void *start_analyses_thread(void *arg);
-
-void write_report_info(FILE *output_fd, const char *path, long long size, struct task_details *task);
 
 int directory_exists(const char *path);
 
