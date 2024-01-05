@@ -183,10 +183,10 @@ int main(int argc, char *argv[])
     struct Response response;
     response.response_code = NO_RESPONSE;
     response.message[0] = '\0';
-    ssize_t bytes_received;
+    ssize_t bytes_received = 0;
 
     // JUST FOR TESTING
-    bytes_received = recv(sfd, &msg, sizeof(response), 0);
+    // bytes_received = recv(sfd, &msg, sizeof(response), 0);
     // bytes_received = 1;
     // response.response_code = OK;
     // strcpy(response.message, "/home/sebi/Desktop/temaa/ghizi.cpp");
