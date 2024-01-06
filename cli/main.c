@@ -167,6 +167,7 @@ int main(int argc, char *argv[])
     {
         usage("No task specified");
     }
+    // FIX ME - even if i return 0 here the daemon still gets something
     ssize_t bytes_sent;
     bytes_sent = send(sfd, &msg, sizeof(msg), 0);
 
@@ -244,6 +245,6 @@ int main(int argc, char *argv[])
         break;
     }
     }
-
+    close(sfd);
     return 0;
 }

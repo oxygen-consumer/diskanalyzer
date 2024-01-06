@@ -115,15 +115,15 @@ int main(void)
         for (;;)
         {
             // Check if any thread has finished
-            for (int i = 0; i < MAX_TASKS; ++i)
-            {
-                if (task[i] != NULL && (task[i]->status == FINISHED || task[i]->status == ERROR))
-                {
-                    pthread_join(threads[i], NULL);
-                    task[i] = NULL;
-                    used_tasks[i] = 0;
-                }
-            }
+            // for (int i = 0; i < MAX_TASKS; ++i)
+            // {
+            //     if (task[i] != NULL && (task[i]->status == FINISHED || task[i]->status == ERROR))
+            //     {
+            //         pthread_join(threads[i], NULL);
+            //         task[i] = NULL;
+            //         used_tasks[i] = 0;
+            //     }
+            // }
 
             cfd = accept(sfd, NULL, NULL);
             if (cfd == -1)
@@ -152,37 +152,24 @@ int main(void)
             switch (msg.task_code)
             {
             case ADD: {
-
-                // bytes_sent = send(cfd, &response, sizeof(response), 0);
-
-                // if (bytes_sent == -1)
-                // {
-                //     syslog(LOG_USER | LOG_WARNING, "Failed to send message to server.");
-                // }
                 int thread_id = get_unused_task(used_tasks);
                 if (thread_id == -1)
                 {
-                    response.response_code = GENERAL_ERROR;
-                    snprintf(response.message, MAX_PATH_SIZE, "No more threads available.");
-                    send(cfd, &response, sizeof(response), 0);
-                    syslog(LOG_USER | LOG_WARNING, "No more threads available.");
+                    syslog(LOG_USER | LOG_WARNING, "No more tasks can be added.");
+                    send_error_response(cfd, GENERAL_ERROR);
                     break;
                 }
                 task[thread_id] = init_task(next_id++, msg.path, msg.priority);
                 if (task[thread_id] == NULL)
                 {
-                    response.response_code = GENERAL_ERROR;
-                    snprintf(response.message, MAX_PATH_SIZE, "Failed to create task.");
-                    send(cfd, &response, sizeof(response), 0);
-                    syslog(LOG_USER | LOG_WARNING, "Failed to create task.");
+                    syslog(LOG_USER | LOG_WARNING, "Failed to initialize task.");
+                    send_error_response(cfd, GENERAL_ERROR);
                     break;
                 }
                 if (pthread_create(&threads[thread_id], NULL, start_analyses_thread, task[thread_id]) != 0)
                 {
-                    response.response_code = GENERAL_ERROR;
-                    snprintf(response.message, MAX_PATH_SIZE, "Failed to create thread.");
-                    send(cfd, &response, sizeof(response), 0);
                     syslog(LOG_USER | LOG_WARNING, "Failed to create thread.");
+                    send_error_response(cfd, GENERAL_ERROR);
                     break;
                 }
                 used_tasks[thread_id] = 1;
@@ -195,53 +182,55 @@ int main(void)
 
             case SUSPEND: {
                 int thread_id = get_thread_id(msg.id, task);
-                if (thread_id != -1)
+                if (thread_id == -1)
                 {
-
+                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
+                    send_error_response(cfd, INVALID_ID_ERROR);
+                }
+                else
+                {
+                    // syslog(LOG_USER | LOG_WARNING, "Task %d status: %d", msg.id, task[thread_id]->status);
                     if (task[thread_id]->status == PAUSED)
                     {
-                        response.response_code = TASK_ALREADY_SUSPENDED_ERROR;
-                        send(cfd, &response, sizeof(response), 0);
                         syslog(LOG_USER | LOG_WARNING, "Task %d is already suspended.", msg.id);
+                        send_error_response(cfd, TASK_ALREADY_SUSPENDED_ERROR);
                         break;
                     }
                     else if (task[thread_id]->status == FINISHED)
                     {
-                        response.response_code = TASK_ALREADY_FINISHED_ERROR;
-                        send(cfd, &response, sizeof(response), 0);
                         syslog(LOG_USER | LOG_WARNING, "Task %d is already finished.", msg.id);
+                        send_error_response(cfd, TASK_ALREADY_FINISHED_ERROR);
                         break;
                     }
 
                     suspend_task(task[thread_id]);
+                    syslog(LOG_USER | LOG_WARNING, "Task %d suspended.", msg.id);
                     response.response_code = OK;
                     send(cfd, &response, sizeof(response), 0);
-                    syslog(LOG_USER | LOG_WARNING, "Task %d suspended.", msg.id);
                 }
-                else
-                {
-                    response.response_code = INVALID_ID_ERROR;
-                    send(cfd, &response, sizeof(response), 0);
-                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
-                }
+
                 break;
             }
             case RESUME: {
                 int thread_id = get_thread_id(msg.id, task);
-                if (thread_id != -1)
+                if (thread_id == -1)
+                {
+                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
+                    send_error_response(cfd, INVALID_ID_ERROR);
+                    break;
+                }
+                else
                 {
                     if (task[thread_id]->status == RUNNING)
                     {
-                        response.response_code = TASK_ALREADY_RUNNING_ERROR;
-                        send(cfd, &response, sizeof(response), 0);
                         syslog(LOG_USER | LOG_WARNING, "Task %d is already running.", msg.id);
+                        send_error_response(cfd, TASK_ALREADY_RUNNING_ERROR);
                         break;
                     }
                     else if (task[thread_id]->status == FINISHED)
                     {
-                        response.response_code = TASK_ALREADY_FINISHED_ERROR;
-                        send(cfd, &response, sizeof(response), 0);
                         syslog(LOG_USER | LOG_WARNING, "Task %d is already finished.", msg.id);
+                        send_error_response(cfd, TASK_ALREADY_FINISHED_ERROR);
                         break;
                     }
 
@@ -250,61 +239,66 @@ int main(void)
                     send(cfd, &response, sizeof(response), 0);
                     syslog(LOG_USER | LOG_WARNING, "Task %d resumed.", msg.id);
                 }
-                else
-                {
-                    response.response_code = INVALID_ID_ERROR;
-                    send(cfd, &response, sizeof(response), 0);
-                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
-                }
                 break;
             }
 
             case REMOVE: {
-                int thread_id = get_thread_id(msg.id, task);
-                if (task[thread_id] != NULL)
-                {
-                    // FIXME !!!!!!!!!!!!!!!!!!
-                    //  ???????
 
-                    if (task[thread_id]->status == 0)
-                    {
-                        if (pthread_cancel(threads[thread_id]) != 0)
-                        {
-                            syslog(LOG_USER | LOG_WARNING, "Failed to cancel thread.");
-                        }
-                        else
-                        {
-                            void *res;
-                            if (pthread_join(threads[thread_id], &res) != 0)
-                            {
-                                syslog(LOG_USER | LOG_WARNING, "Failed to join thread.");
-                            }
-                            else if (res == PTHREAD_CANCELED)
-                            {
-                                syslog(LOG_USER | LOG_INFO, "Thread was cancelled.");
-                                destroy_task(task[thread_id]);
-                                task[thread_id] = NULL;
-                                used_tasks[thread_id] = 0;
-                            }
-                            else
-                            {
-                                syslog(LOG_USER | LOG_INFO, "Thread was not cancelled.");
-                            }
-                        }
-                    }
-                    // else??????
+                // FIX REMOVE!!!!!!!!!!!!!!!
+                int thread_id = get_thread_id(msg.id, task);
+                // pthread_mutex_lock(task[thread_id]->permission_mutex);
+                if (thread_id == -1)
+                {
+                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
+                    send_error_response(cfd, INVALID_ID_ERROR);
+                    break;
                 }
                 else
                 {
-                    response.response_code = INVALID_ID_ERROR;
-                    send(cfd, &response, sizeof(response), 0);
-                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
+
+                    if (pthread_cancel(threads[thread_id]) != 0)
+                    {
+                        syslog(LOG_USER | LOG_WARNING, "Failed to cancel thread.");
+                        send_error_response(cfd, GENERAL_ERROR);
+                    }
+                    else
+                    {
+                        void *res;
+                        if (pthread_join(threads[thread_id], &res) != 0)
+                        {
+                            send_error_response(cfd, GENERAL_ERROR);
+                            syslog(LOG_USER | LOG_WARNING, "Failed to join thread.");
+                        }
+                        else if (res == PTHREAD_CANCELED)
+                        {
+                            syslog(LOG_USER | LOG_INFO, "Thread was cancelled.");
+                            destroy_task(task[thread_id]);
+                            task[thread_id] = NULL;
+                            used_tasks[thread_id] = 0;
+
+                            response.response_code = OK;
+                            send(cfd, &response, sizeof(response), 0);
+                        }
+                        else
+                        {
+                            send_error_response(cfd, GENERAL_ERROR);
+                            syslog(LOG_USER | LOG_INFO, "Thread was not cancelled.");
+                        }
+                    }
                 }
+
                 break;
             }
             case INFO: {
                 int thread_id = get_thread_id(msg.id, task);
-                if (task[thread_id] != NULL)
+                if (thread_id == -1)
+                {
+                    response.response_code = INVALID_ID_ERROR;
+                    send(cfd, &response, sizeof(response), 0);
+                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
+                    break;
+                }
+                else
                 {
                     response.response_code = OK;
                     // TO DO !!!!
@@ -312,12 +306,6 @@ int main(void)
                     snprintf(response.message, MAX_PATH_SIZE, "%d", task[thread_id]->task_id); // temporary
                     send(cfd, &response, sizeof(response), 0);
                     syslog(LOG_USER | LOG_WARNING, "Task %d info sent.", msg.id);
-                }
-                else
-                {
-                    response.response_code = INVALID_ID_ERROR;
-                    send(cfd, &response, sizeof(response), 0);
-                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
                 }
                 break;
             }
@@ -358,8 +346,8 @@ int main(void)
                     syslog(LOG_INFO, "%s", buffer);
                 }
                 response.response_code = OK;
-                snprintf(response.message, MAX_PATH_SIZE, "/var/run/user/%d/da_tasks/task_%d.info",
-                         getuid()); // temporary
+                snprintf(response.message, MAX_PATH_SIZE, "/var/run/user/%d/da_tasks/task_%d.info", getuid(),
+                         msg.id); // temporary
 
                 fclose(output_fd);
                 break;
