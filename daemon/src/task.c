@@ -107,7 +107,8 @@ void resume_task(struct task_details *task)
     task->output_fd = get_output_fd(task->task_id);
     if (task->output_fd == NULL)
     {
-        perror("Error opening file");
+        syslog("Error opening file when resume");
+        exit(errno); // if we couldn't open the file, we can't continue
     }
 
     task->status = RUNNING;
