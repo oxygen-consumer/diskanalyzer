@@ -1,4 +1,5 @@
 #include <analyzer.h>
+#include <constants.h>
 #include <daemonize.h>
 #include <shared.h>
 #include <utils.h>
@@ -14,17 +15,6 @@
 #include <syslog.h>
 #include <unistd.h>
 
-int get_unused_task(int used_tasks[MAX_TASKS])
-{
-    for (int i = 0; i < MAX_TASKS; i++)
-    {
-        if (used_tasks[i] == 0)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
 /*
 `SCHED_OTHER (0):** This is the default scheduling policy for threads. Threads with this policy are scheduled in a
 round-robin fashion, with higher priority threads getting more CPU time. The priority range for this policy is from 0
@@ -69,16 +59,14 @@ int main(void)
     ssize_t nread;
     pthread_t threads[MAX_TASKS];
     struct task_details *task[MAX_TASKS];
-    int used_tasks[MAX_TASKS];
     for (int i = 0; i < MAX_TASKS; ++i)
     {
         task[i] = NULL;
-        used_tasks[i] = 0;
     }
-    int i = 0;
+    int id_next = 0;
 
     // used for print, to be deleted after
-    char thread_output[MAX_PATH_LENGTH];
+    char thread_output[MAX_PATH_SIZE];
     char buffer[1024];
     //
 
@@ -116,18 +104,6 @@ int main(void)
         // Handle every incomming connection
         for (;;)
         {
-            // remove finished tasks (status == error and status = finished)
-            // idk if we need to delete them or just keep them in memory for list and print
-            for (int i = 0; i < MAX_TASKS; ++i)
-            {
-                if (task[i] != NULL && (task[i]->status == FINISHED || task[i]->status == ERROR))
-                {
-                    pthread_join(threads[i], NULL);
-                    destroy_task(task[i]);
-                    task[i] = NULL;
-                    used_tasks[i] = 0;
-                }
-            }
 
             cfd = accept(sfd, NULL, NULL);
             if (cfd == -1)
@@ -162,89 +138,53 @@ int main(void)
             switch (msg.task_code)
             {
             case ADD:
-                i = get_unused_task(used_tasks);
-                if (i == -1)
-                {
-                    syslog(LOG_USER | LOG_WARNING, "No more tasks available.");
-                    break;
-                }
-                task[i] = init_task(i, msg.path, msg.priority);
-                if (task[i] == NULL)
+                task[id_next] = init_task(id_next, msg.path, msg.priority);
+                if (task[id_next] == NULL)
                 {
                     syslog(LOG_USER | LOG_WARNING, "Failed to create task.");
                     break;
                 }
-                if (pthread_create(&threads[i], NULL, start_analyses_thread, task[i]) != 0)
+                if (pthread_create(&threads[id_next], NULL, start_analyses_thread, task[id_next]) != 0)
                 {
                     syslog(LOG_USER | LOG_WARNING, "Failed to create thread.");
                     break;
                 }
-                used_tasks[i] = 1;
                 syslog(LOG_USER | LOG_WARNING, "Created thread.");
+                ++id_next;
                 break;
             case PRIORITY:
-                if (task[msg.id] != NULL)
-                {
-                    task[msg.id]->priority = msg.priority;
-                }
-                else
-                {
-                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
-                }
+                syslog(LOG_USER | LOG_WARNING, "Not yet implemented. Task for id %d rejected.", msg.id);
                 break;
             case SUSPEND:
-                if (task[msg.id] != NULL)
+                if (msg.id < 0 || msg.id >= MAX_TASKS || task[msg.id] == NULL)
                 {
-                    suspend_task(task[msg.id]);
+                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
                 }
                 else
                 {
-                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
+                    set_task_status(task[msg.id], PAUSED);
                 }
                 break;
             case RESUME:
-                if (task[msg.id] != NULL)
+                if (msg.id < 0 || msg.id >= MAX_TASKS || task[msg.id] == NULL)
                 {
-                    resume_task(task[msg.id]);
+                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
                 }
                 else
                 {
-                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
+                    set_task_status(task[msg.id], RUNNING);
                 }
                 break;
             case REMOVE:
-                if (task[msg.id] != NULL)
+                if (msg.id < 0 || msg.id >= MAX_TASKS || task[msg.id] == NULL)
                 {
-                    if (task[msg.id]->status == 0)
-                    {
-                        if (pthread_cancel(threads[msg.id]) != 0)
-                        {
-                            syslog(LOG_USER | LOG_WARNING, "Failed to cancel thread.");
-                        }
-                        else
-                        {
-                            void *res;
-                            if (pthread_join(threads[msg.id], &res) != 0)
-                            {
-                                syslog(LOG_USER | LOG_WARNING, "Failed to join thread.");
-                            }
-                            else if (res == PTHREAD_CANCELED)
-                            {
-                                syslog(LOG_USER | LOG_INFO, "Thread was cancelled.");
-                                destroy_task(task[msg.id]);
-                                task[msg.id] = NULL;
-                                used_tasks[msg.id] = 0;
-                            }
-                            else
-                            {
-                                syslog(LOG_USER | LOG_INFO, "Thread was not cancelled.");
-                            }
-                        }
-                    }
+                    syslog(LOG_USER | LOG_WARNING, "Invalid task id.");
+                    break;
                 }
                 else
                 {
-                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
+                    remove_task(task[msg.id], &threads[msg.id]);
+                    task[msg.id] = NULL;
                 }
                 break;
 
@@ -260,7 +200,7 @@ int main(void)
                 }
                 break;
             case LIST:
-                for (int i = 0; i < MAX_TASKS; ++i)
+                for (int i = 0; i < id_next; ++i)
                 {
                     if (task[i] != NULL)
                     {
@@ -269,7 +209,7 @@ int main(void)
                 }
                 break;
             case PRINT:
-                snprintf(thread_output, MAX_PATH_LENGTH, "/tmp/diskanalyzer_%d.txt", msg.id);
+                snprintf(thread_output, MAX_PATH_SIZE, "/tmp/diskanalyzer_%d.txt", msg.id);
                 FILE *output_fd = fopen(thread_output, "w");
                 if (output_fd == NULL)
                 {

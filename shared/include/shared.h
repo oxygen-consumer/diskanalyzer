@@ -73,6 +73,7 @@ enum Status
     NOT_STARTED,
     RUNNING,
     PAUSED,
+    PRIORITY_WAITING,
     FINISHED,
     ERROR,
 };

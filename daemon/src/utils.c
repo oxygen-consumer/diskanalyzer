@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -77,7 +78,7 @@ int special_directory(char *d_name)
     return strcmp(d_name, ".") == 0 || strcmp(d_name, "..") == 0 || d_name[0] == '.'; // also hidden files atm
 }
 
-int get_depth(const char *path, const char *subpath)
+int get_depth_of_subpath(const char *path, const char *subpath)
 {
     // Check if subpath starts with path
     if (strncmp(path, subpath, strlen(path)) != 0)
@@ -153,4 +154,47 @@ void syslog_message(const struct message *msg)
     }
 
     syslog(LOG_INFO, "Task Code: %s, Path: %s, ID: %d, Priority: %s", taskCode, msg->path, msg->id, priority);
+}
+
+int directory_exists(const char *path)
+{
+    struct stat statbuf;
+
+    if (stat(path, &statbuf) != 0)
+    {
+        // Check if the error was ENOENT ("No such file or directory")
+        if (errno == ENOENT)
+        {
+            return 0; // The directory does not exist
+        }
+        else
+        {
+            perror("stat");
+            return -1;
+        }
+    }
+
+    // Check if the path is a directory
+    return S_ISDIR(statbuf.st_mode);
+}
+
+const char *get_status_name(enum Status status)
+{
+    switch (status)
+    {
+    case NOT_STARTED:
+        return "NOT_STARTED";
+    case RUNNING:
+        return "RUNNING";
+    case PAUSED:
+        return "PAUSED";
+    case PRIORITY_WAITING:
+        return "PRIORITY_WAITING";
+    case FINISHED:
+        return "FINISHED";
+    case ERROR:
+        return "ERROR";
+    default:
+        return "UNKNOWN_STATUS";
+    }
 }
