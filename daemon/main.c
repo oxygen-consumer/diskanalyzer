@@ -187,7 +187,7 @@ int main(void)
                 }
                 pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
                 pthread_attr_setschedparam(&attr, &param);
-                
+
                 if (pthread_create(&threads[thread_id], &attr, start_analyses_thread, task[thread_id]) != 0)
                 {
                     syslog(LOG_USER | LOG_WARNING, "Failed to create thread.");
@@ -315,8 +315,7 @@ int main(void)
                 int thread_id = get_thread_id(msg.id, task);
                 if (thread_id == -1)
                 {
-                    response.response_code = INVALID_ID_ERROR;
-                    send(cfd, &response, sizeof(response), 0);
+                    send_error_response(cfd, INVALID_ID_ERROR);
                     syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
                     break;
                 }
@@ -325,7 +324,9 @@ int main(void)
                     response.response_code = OK;
                     // TO DO !!!!
                     //  PUT INFO ABOUT TASK IN RESPONSE.MESSAGE
-                    snprintf(response.message, MAX_PATH_SIZE, "%d", task[thread_id]->task_id); // temporary
+                    snprintf(response.message, MAX_PATH_SIZE, "ID: %d, Priority: %d, Path: %s, Status: %s",
+                             task[thread_id]->task_id, task[thread_id]->priority, task[thread_id]->path,
+                             status_to_string(task[thread_id]->status));
                     send(cfd, &response, sizeof(response), 0);
                     syslog(LOG_USER | LOG_WARNING, "Task %d info sent.", msg.id);
                 }
