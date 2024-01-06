@@ -46,8 +46,9 @@ enum ResponseCode
     TASK_ALREADY_FINISHED_ERROR,    // if task is finished, it can't be suspended/resumed
     TASK_ALREADY_SUSPENDED_ERROR,   // cannot suspend task that is already suspended
     TASK_ALREADY_RUNNING_ERROR,     // cannot resume task that is already running
-    NO_TASK_DONE_ERROR,             // cannot print analysis report for a task that is not done
+    NO_TASK_DONE_ERROR,             // cannot list analysis reports if no task is finished
     GENERAL_ERROR,                  // really bad things happened
+    NOT_FINISHED_ERROR,             // cannot print analysis report for a task that is not finished
     NO_RESPONSE,                    // used as default value
 };
 
@@ -65,7 +66,7 @@ struct Response
     //    dirs, 420 files\0" ; please note the null terminator
     // -l => (message=PATH_TO_message,OK) | GENERAL_ERROR
     //    => e.g. message = "/tmp/analysis_report_1.txt\0" ; please note the null terminator
-    // -p => (message=PATH_TO_message, OK) | NO_TASK_DONE_ERROR | GENERAL_ERROR
+    // -p => (message=PATH_TO_message, OK) | NOT_FINISHED_ERROR | GENERAL_ERROR
 };
 
 enum Status

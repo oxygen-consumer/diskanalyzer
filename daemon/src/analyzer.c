@@ -1,4 +1,5 @@
 #include <analyzer.h>
+#include <constants.h>
 #include <task.h>
 #include <utils.h>
 
@@ -13,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <syslog.h>
+#include <unistd.h>
 
 void check_or_exit_thread(int ok, struct task_details *task, const char *msg)
 {
@@ -98,7 +100,6 @@ void *start_analyses_thread(void *arg)
     check_or_exit_thread(current_task->path != NULL, current_task, "NULL path");
     check_or_exit_thread(current_task->path[0] != '\0', current_task, "Empty path");
     check_or_exit_thread(directory_exists(current_task->path) != 0, current_task, "Directory does not exist");
-    output_task(current_task);
 
     current_task->total_size = get_size_dir(current_task->path, current_task);
     check_or_exit_thread(current_task->total_size != 0, current_task, "Total size = 0");

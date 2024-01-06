@@ -1,18 +1,37 @@
 #include <utils.h>
 
+#define __USE_XOPEN_EXTENDED
+
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <ftw.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
+
+int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+{
+    int rv = remove(fpath);
+
+    if (rv)
+        perror(fpath);
+
+    return rv;
+}
+
+int rmrf(const char *path)
+{
+    return nftw(path, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
+}
 
 void die(bool ok, const char *msg, ...)
 {
@@ -27,12 +46,17 @@ void die(bool ok, const char *msg, ...)
         syslog(LOG_USER | LOG_WARNING, "Unable to remove the socket file located at %s.", SV_SOCK_PATH);
     }
 
+    char path[50];
+    sprintf(path, "/var/run/user/%d/da_tasks", getuid());
+    if (rmrf(path))
+    {
+        syslog(LOG_WARNING, "Failed to delete tasks directory.");
+    }
+
     closelog();
     exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
-/* Merge current_path and add_path in ans
- */
 void add_to_path(const char *current_path, const char *add_path, char *ans)
 {
     strcpy(ans, current_path);
@@ -43,9 +67,6 @@ void add_to_path(const char *current_path, const char *add_path, char *ans)
     strcat(ans, add_path);
 }
 
-/* Get size of an file/directory.
- * Returns 0 if something went wrong.
- */
 long long fsize(const char *filename)
 {
     struct stat st;
