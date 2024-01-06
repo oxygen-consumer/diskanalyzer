@@ -30,7 +30,8 @@ void die(bool ok, const char *msg, ...);
  */
 void add_to_path(const char *current_path, const char *add_path, char *ans);
 
-/* get size of an file/directory
+/*
+ * Get size of an file/directory
  * returns 0 if something went wrong
  */
 long long fsize(const char *filename);
@@ -64,6 +65,6 @@ char *status_to_string(enum Status status);
  */
 int directory_exists(const char *path);
 
-const char *get_status_name(enum Status status);
+
 
 #endif

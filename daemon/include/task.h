@@ -7,8 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_TASKS 100
-
 struct task_details
 {
     int task_id;
@@ -25,7 +23,7 @@ struct task_details
 void output_task(struct task_details *task);
 
 /*
- *Check the permission mutex.
+ * Check the permission mutex.
  */
 void permission_to_continue(struct task_details *task);
 

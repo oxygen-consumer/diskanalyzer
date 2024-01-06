@@ -67,10 +67,12 @@ int main(void)
     ssize_t nread;
     pthread_t threads[MAX_TASKS];
     struct task_details *task[MAX_TASKS];
+    int used_tasks[MAX_TASKS];
     for (int i = 0; i < MAX_TASKS; ++i)
     {
         threads[i] = 0;
         task[i] = NULL;
+        used_tasks[i] = 0;
     }
     int next_id = 1;
 
@@ -187,7 +189,6 @@ int main(void)
                 snprintf(response.message, MAX_PATH_SIZE, "%d", task[thread_id]->task_id);
                 send(cfd, &response, sizeof(response), 0);
                 syslog(LOG_USER | LOG_WARNING, "Created thread.");
-                ++id_next;
                 break;
             }
 

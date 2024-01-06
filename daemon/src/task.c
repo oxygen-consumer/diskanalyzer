@@ -11,7 +11,7 @@ void output_task(struct task_details *task)
 {
     syslog(LOG_INFO, "-----------------");
     syslog(LOG_INFO, "Task id: %d", task->task_id);
-    syslog(LOG_INFO, "Task status: %s", get_status_name(task->status));
+    syslog(LOG_INFO, "Task status: %s", status_to_string(task->status));
     syslog(LOG_INFO, "Task priority: %d", task->priority);
     syslog(LOG_INFO, "Task files: %d", task->files);
     syslog(LOG_INFO, "Task dirs: %d", task->dirs);
@@ -29,11 +29,11 @@ void permission_to_continue(struct task_details *task)
 FILE *get_output_fd(int id)
 {
     char thread_output[MAX_PATH_SIZE];
-    snprintf(thread_output, MAX_PATH_SIZE, "/tmp/diskanalyzer_%d.txt", id);
+    snprintf(thread_output, MAX_PATH_SIZE, PATH_TO_ANALYZE, getuid(), id);
     FILE *output_fd = fopen(thread_output, "w");
     if (output_fd == NULL)
     {
-        perror("Error opening file");
+        syslog(LOG_ERR, "Error opening file %s: %s", thread_output, strerror(errno));
         return NULL;
     }
     return output_fd;
@@ -96,9 +96,9 @@ void destroy_task(struct task_details *task)
 void suspend_task(struct task_details *task)
 {
     pthread_mutex_lock(task->permission_mutex);
-    fclose(task->output_fd);
-
     task->status = PAUSED;
+
+    fclose(task->output_fd);
     syslog(LOG_INFO, "Task %d suspended.", task->task_id);
     set_task_status(task, PAUSED);
 }
@@ -127,7 +127,7 @@ void finish_task(struct task_details *task)
 void set_task_status(struct task_details *task, enum Status status)
 {
     pthread_mutex_lock(task->status_mutex);
-    syslog(LOG_INFO, "Task %d with status %s.", task->task_id, get_status_name(status));
+    syslog(LOG_INFO, "Task %d with status %s.", task->task_id, status_to_string(status));
     // output_task(task);
 
     // TODO: check if status change is valid

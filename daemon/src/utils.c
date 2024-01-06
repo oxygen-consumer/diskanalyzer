@@ -99,30 +99,6 @@ int special_directory(char *d_name)
     return strcmp(d_name, ".") == 0 || strcmp(d_name, "..") == 0 || d_name[0] == '.'; // also hidden files atm
 }
 
-int get_depth_of_subpath(const char *path, const char *subpath)
-{
-    // Check if subpath starts with path
-    if (strncmp(path, subpath, strlen(path)) != 0)
-    {
-        return -1; // subpath is not a subpath of path
-    }
-
-    // Get the part of subpath after path
-    const char *relative_subpath = subpath + strlen(path);
-
-    // Count the number of '/' characters in relative_subpath
-    int depth = 0;
-    for (const char *p = relative_subpath; *p != '\0'; p++)
-    {
-        if (*p == '/')
-        {
-            depth++;
-        }
-    }
-
-    return depth;
-}
-
 void syslog_message(const struct message *msg)
 {
     char taskCode[20];
@@ -174,7 +150,32 @@ void syslog_message(const struct message *msg)
         break;
     }
 
-    syslog(LOG_INFO, "Task Code: %s, Path: %s, ID: %d, Priority: %s", taskCode, msg->path, msg->id, priority);
+    syslog(LOG_INFO, "Received - Task Code: %s, Path: %s, ID: %d, Priority: %s", taskCode, msg->path, msg->id,
+           priority);
+}
+
+int get_depth_of_subpath(const char *path, const char *subpath)
+{
+    // Check if subpath starts with path
+    if (strncmp(path, subpath, strlen(path)) != 0)
+    {
+        return -1; // subpath is not a subpath of path
+    }
+
+    // Get the part of subpath after path
+    const char *relative_subpath = subpath + strlen(path);
+
+    // Count the number of '/' characters in relative_subpath
+    int depth = 0;
+    for (const char *p = relative_subpath; *p != '\0'; p++)
+    {
+        if (*p == '/')
+        {
+            depth++;
+        }
+    }
+
+    return depth;
 }
 
 int directory_exists(const char *path)
@@ -199,7 +200,50 @@ int directory_exists(const char *path)
     return S_ISDIR(statbuf.st_mode);
 }
 
-const char *get_status_name(enum Status status)
+int get_unused_task(int used_tasks[MAX_TASKS])
+{
+    for (int i = 0; i < MAX_TASKS; i++)
+    {
+        if (used_tasks[i] == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int get_thread_id(int task_id, struct task_details *tasks[MAX_TASKS])
+{
+    for (int i = 0; i < MAX_TASKS; i++)
+    {
+        if (tasks[i] != NULL && tasks[i]->task_id == task_id)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void send_error_response(int client_fd, enum ResponseCode response_code)
+{
+    struct Response response;
+    response.response_code = response_code;
+    response.message[0] = '\0';
+    ssize_t bytes_sent = 0;
+
+    bytes_sent = send(client_fd, &response, sizeof(response), 0);
+
+    if (bytes_sent == -1)
+    {
+        syslog(LOG_ERR, "Failed to send response to client.");
+        return;
+    }
+
+    syslog(LOG_INFO, "Sent response to client.");
+    close(client_fd);
+}
+
+char *status_to_string(enum Status status)
 {
     switch (status)
     {
@@ -208,14 +252,12 @@ const char *get_status_name(enum Status status)
     case RUNNING:
         return "RUNNING";
     case PAUSED:
-        return "PAUSED";
-    case PRIORITY_WAITING:
-        return "PRIORITY_WAITING";
+        return "SUSPENDED";
     case FINISHED:
         return "FINISHED";
     case ERROR:
         return "ERROR";
     default:
-        return "UNKNOWN_STATUS";
+        return "UNKNOWN";
     }
 }

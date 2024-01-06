@@ -36,7 +36,4 @@ void write_report_info(const char *path, long long size, struct task_details *ta
  */
 void check_or_exit_thread(int ok, struct task_details *task, const char *msg);
 
-
-void write_report_info(FILE *output_fd, const char *path, long long size, struct task_details *task);
-
 #endif // ANALYZER_H
