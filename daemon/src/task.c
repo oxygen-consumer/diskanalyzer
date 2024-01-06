@@ -58,10 +58,12 @@ void suspend_task(struct task_details *task)
 {
     pthread_mutex_lock(task->permission_mutex);
     syslog(LOG_INFO, "Task %d suspended.", task->task_id);
+    set_task_status(task, PAUSED);
 }
 
 void resume_task(struct task_details *task)
 {
     pthread_mutex_unlock(task->permission_mutex);
     syslog(LOG_INFO, "Task %d resumed.", task->task_id);
+    set_task_status(task, RUNNING);
 }
