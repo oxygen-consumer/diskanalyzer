@@ -166,7 +166,29 @@ int main(void)
                     send_error_response(cfd, GENERAL_ERROR);
                     break;
                 }
-                if (pthread_create(&threads[thread_id], NULL, start_analyses_thread, task[thread_id]) != 0)
+
+                // Assign priority to thread
+                pthread_attr_t attr;
+                pthread_attr_init(&attr);
+                struct sched_param param;
+                switch (task[thread_id]->priority)
+                {
+                case LOW:
+                    param.sched_priority = 0;
+                    break;
+                case MEDIUM:
+                    param.sched_priority = 50;
+                    break;
+                case HIGH:
+                    param.sched_priority = 99;
+                    break;
+                default:
+                    break;
+                }
+                pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+                pthread_attr_setschedparam(&attr, &param);
+                
+                if (pthread_create(&threads[thread_id], &attr, start_analyses_thread, task[thread_id]) != 0)
                 {
                     syslog(LOG_USER | LOG_WARNING, "Failed to create thread.");
                     send_error_response(cfd, GENERAL_ERROR);
