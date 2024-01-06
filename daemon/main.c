@@ -201,7 +201,7 @@ int main(void)
                 }
                 else
                 {
-                    // syslog(LOG_USER | LOG_WARNING, "Task %d status: %d", msg.id, task[thread_id]->status);
+                    syslog(LOG_USER | LOG_WARNING, "Task %d status: %d", msg.id, task[thread_id]->status);
                     if (task[thread_id]->status == PAUSED)
                     {
                         syslog(LOG_USER | LOG_WARNING, "Task %d is already suspended.", msg.id);
@@ -215,7 +215,7 @@ int main(void)
                         break;
                     }
 
-                    suspend_task(task[thread_id]);
+                    set_task_status(task[thread_id], PAUSED);
                     syslog(LOG_USER | LOG_WARNING, "Task %d suspended.", msg.id);
                     response.response_code = OK;
                     send(cfd, &response, sizeof(response), 0);
@@ -246,59 +246,29 @@ int main(void)
                         break;
                     }
 
-                    resume_task(task[thread_id]);
+                    set_task_status(task[thread_id], RUNNING);
+                    syslog(LOG_USER | LOG_WARNING, "Task %d resumed.", msg.id);
                     response.response_code = OK;
                     send(cfd, &response, sizeof(response), 0);
-                    syslog(LOG_USER | LOG_WARNING, "Task %d resumed.", msg.id);
                 }
                 break;
             }
 
             case REMOVE: {
-
-                // FIX REMOVE!!!!!!!!!!!!!!!
                 int thread_id = get_thread_id(msg.id, task);
-                // pthread_mutex_lock(task[thread_id]->permission_mutex);
-                if (thread_id == -1)
+                if (remove_task(task[thread_id], &threads[thread_id]) != 0)
                 {
-                    syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
-                    send_error_response(cfd, INVALID_ID_ERROR);
-                    break;
+                    if (task[thread_id] != NULL)
+                        output_task(task[thread_id]);
+                    syslog(LOG_USER | LOG_WARNING, "Removed faild %d.", msg.id);
+                    send_error_response(cfd, GENERAL_ERROR);
                 }
                 else
                 {
-
-                    if (pthread_cancel(threads[thread_id]) != 0)
-                    {
-                        syslog(LOG_USER | LOG_WARNING, "Failed to cancel thread.");
-                        send_error_response(cfd, GENERAL_ERROR);
-                    }
-                    else
-                    {
-                        void *res;
-                        if (pthread_join(threads[thread_id], &res) != 0)
-                        {
-                            send_error_response(cfd, GENERAL_ERROR);
-                            syslog(LOG_USER | LOG_WARNING, "Failed to join thread.");
-                        }
-                        else if (res == PTHREAD_CANCELED)
-                        {
-                            syslog(LOG_USER | LOG_INFO, "Thread was cancelled.");
-                            destroy_task(task[thread_id]);
-                            task[thread_id] = NULL;
-                            used_tasks[thread_id] = 0;
-
-                            response.response_code = OK;
-                            send(cfd, &response, sizeof(response), 0);
-                        }
-                        else
-                        {
-                            send_error_response(cfd, GENERAL_ERROR);
-                            syslog(LOG_USER | LOG_INFO, "Thread was not cancelled.");
-                        }
-                    }
+                    task[thread_id] = NULL;
                 }
-
+                response.response_code = OK;
+                send(cfd, &response, sizeof(response), 0);
                 break;
             }
             case INFO: {
@@ -324,7 +294,15 @@ int main(void)
             }
 
             case LIST:
-                // TODO:
+                // TODO
+                for (int i = 0; i < MAX_TASKS; i++)
+                {
+                    if (task[i] != NULL)
+                    {
+                        output_task(task[i]);
+                    }
+                }
+                send_error_response(cfd, INVALID_ID_ERROR);
                 break;
 
             case PRINT: {
