@@ -37,7 +37,7 @@ void add_to_path(const char *current_path, const char *add_path, char *ans);
 long long fsize(const char *filename);
 
 /*
- *Return a substring of the input path, starting from the depth-th '/' character from the end of the string.
+ * Return a substring of the input path, starting from the depth-th '/' character from the end of the string.
  */
 char *relative_path(const char *path, int depth);
 
@@ -64,7 +64,5 @@ char *status_to_string(enum Status status);
  * Check if the directory exists, returns 1 if exits.
  */
 int directory_exists(const char *path);
-
-
 
 #endif
