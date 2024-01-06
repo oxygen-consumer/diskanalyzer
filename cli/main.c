@@ -176,22 +176,13 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    /* FIXME:
-
-     */
-
     struct Response response;
     response.response_code = NO_RESPONSE;
     response.message[0] = '\0';
     ssize_t bytes_received = 0;
 
-    // JUST FOR TESTING
-    // bytes_received = recv(sfd, &msg, sizeof(response), 0);
-    // bytes_received = 1;
-    // response.response_code = OK;
-    // strcpy(response.message, "/home/sebi/Desktop/temaa/ghizi.cpp");
-    // END OF TESTING
-    //
+    bytes_received = recv(sfd, &response, sizeof(response), 0);
+
     if (bytes_received <= 0)
     {
         fprintf(stderr, "Failed to receive response from server.\n");
@@ -207,6 +198,7 @@ int main(int argc, char *argv[])
     switch (msg.task_code)
     {
     case ADD: {
+        printf("Waiting for analysis task to finish...\n");
         int id = get_id(response.message);
         if (id < 0)
         {

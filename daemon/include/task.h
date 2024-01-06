@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_TASKS 100
 #define MAX_OUTPUT_SIZE 16384
 
 struct task_details

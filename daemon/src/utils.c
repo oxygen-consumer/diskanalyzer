@@ -28,7 +28,7 @@ int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW
 
 int rmrf(const char *path)
 {
-        return nftw(path, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
+    return nftw(path, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
 }
 
 void die(bool ok, const char *msg, ...)
@@ -46,7 +46,7 @@ void die(bool ok, const char *msg, ...)
 
     char path[50];
     sprintf(path, "/var/run/user/%d/da_tasks", getuid());
-    if (rmrf(path)) 
+    if (rmrf(path))
     {
         syslog(LOG_WARNING, "Failed to delete tasks directory.");
     }
@@ -174,4 +174,28 @@ int get_depth(const char *path, const char *subpath)
     }
 
     return depth;
+}
+
+int get_unused_task(int used_tasks[MAX_TASKS])
+{
+    for (int i = 0; i < MAX_TASKS; i++)
+    {
+        if (used_tasks[i] == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int get_thread_id(int task_id, struct task_details *tasks[MAX_TASKS])
+{
+    for (int i = 0; i < MAX_TASKS; i++)
+    {
+        if (tasks[i] != NULL && tasks[i]->task_id == task_id)
+        {
+            return i;
+        }
+    }
+    return -1;
 }

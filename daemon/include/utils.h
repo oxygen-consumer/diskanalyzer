@@ -1,6 +1,8 @@
 #ifndef DAEMON_UTILS_H
 #define DAEMON_UTILS_H
 
+#include <task.h>
+
 #include <assert.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -13,6 +15,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <syslog.h>
+
+#define MAX_TASKS 100
 
 /*
  * Kill the daemon and print the message to syslog.
@@ -46,5 +50,9 @@ int special_directory(char *d_name);
 void syslog_message(const struct message *msg);
 
 int get_depth(const char *path, const char *subpath);
+
+int get_unused_task(int used_tasks[MAX_TASKS]);
+
+int get_thread_id(int task_id, struct task_details *task[MAX_TASKS]);
 
 #endif
