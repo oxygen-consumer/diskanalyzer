@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <syslog.h>
@@ -198,4 +199,23 @@ int get_thread_id(int task_id, struct task_details *tasks[MAX_TASKS])
         }
     }
     return -1;
+}
+
+void send_error_response(int client_fd, enum ResponseCode response_code)
+{
+    struct Response response;
+    response.response_code = response_code;
+    response.message[0] = '\0';
+    ssize_t bytes_sent = 0;
+
+    bytes_sent = send(client_fd, &response, sizeof(response), 0);
+
+    if (bytes_sent == -1)
+    {
+        syslog(LOG_ERR, "Failed to send response to client.");
+        return;
+    }
+
+    syslog(LOG_INFO, "Sent response to client.");
+    close(client_fd);
 }

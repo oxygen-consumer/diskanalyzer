@@ -55,4 +55,6 @@ int get_unused_task(int used_tasks[MAX_TASKS]);
 
 int get_thread_id(int task_id, struct task_details *task[MAX_TASKS]);
 
+void send_error_response(int client_fd, enum ResponseCode);
+
 #endif
