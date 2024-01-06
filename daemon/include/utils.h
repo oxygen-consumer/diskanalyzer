@@ -57,4 +57,6 @@ int get_thread_id(int task_id, struct task_details *task[MAX_TASKS]);
 
 void send_error_response(int client_fd, enum ResponseCode);
 
+char *status_to_string(enum Status status);
+
 #endif

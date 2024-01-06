@@ -219,3 +219,22 @@ void send_error_response(int client_fd, enum ResponseCode response_code)
     syslog(LOG_INFO, "Sent response to client.");
     close(client_fd);
 }
+
+char *status_to_string(enum Status status)
+{
+    switch (status)
+    {
+    case NOT_STARTED:
+        return "NOT_STARTED";
+    case RUNNING:
+        return "RUNNING";
+    case PAUSED:
+        return "SUSPENDED";
+    case FINISHED:
+        return "FINISHED";
+    case ERROR:
+        return "ERROR";
+    default:
+        return "UNKNOWN";
+    }
+}
