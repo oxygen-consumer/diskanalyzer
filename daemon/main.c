@@ -15,25 +15,6 @@
 #include <syslog.h>
 #include <unistd.h>
 
-/*
-`SCHED_OTHER (0):** This is the default scheduling policy for threads. Threads with this policy are scheduled in a
-round-robin fashion, with higher priority threads getting more CPU time. The priority range for this policy is from 0
-to 99.
-
-`SCHED_RR (1):** This is a real-time scheduling policy that provides a guaranteed amount of CPU time for threads.
-Threads with this policy are scheduled round-robin fashion, but they are not preempted unless they have used up their
-timeslice. The priority range for this policy is from 1 to 99.
-
-SCHED_FIFO (2):** This is another real-time scheduling policy that provides an even higher priority thanSCHED_RR`.
-Threads with this policy are scheduled in a first-in, first-out (FIFO) fashion, and they are not preempted unless they
-voluntarily give up the CPU or they have been stopped by the operating system. The priority range for this policy is
-from 1 to 99.
-
-`SCHED_IDLE (3):** This is a scheduling policy that is specifically designed for idle threads. Threads with this policy
-are not scheduled for CPU time unless there are no other threads that can run. The priority range for this policy is
-from 0 to 1.
-*/
-
 int main(void)
 {
 
@@ -132,7 +113,8 @@ int main(void)
                 continue;
             }
 
-            syslog_message(&msg);
+            // wtf is this?
+            // syslog_message(&msg);
 
             ssize_t bytes_sent = -1;
             struct Response response;

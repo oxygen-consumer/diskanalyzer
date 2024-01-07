@@ -6,6 +6,7 @@
 #include <syslog.h>
 #include <task.h>
 #include <utils.h>
+#include <unistd.h>
 
 void output_task(struct task_details *task)
 {
