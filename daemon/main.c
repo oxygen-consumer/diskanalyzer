@@ -327,10 +327,39 @@ int main(void)
                 break;
             }
 
-            case LIST:
-                // TODO:
-                break;
+            case LIST: {
+                bool have_tasks = false;
+                snprintf(thread_output, MAX_OUTPUT_SIZE, "/var/run/user/%d/da_tasks/task_LIST.info", getuid());
 
+                FILE *output_fd = fopen(thread_output, "w");
+                if (output_fd == NULL)
+                {
+                    syslog(LOG_USER | LOG_WARNING, "Error opening file for id %d.", msg.id);
+                    send_error_response(cfd, GENERAL_ERROR);
+                    break;
+                }
+
+                for (int i = 0; i < MAX_TASKS; i++)
+                    if (used_tasks[i])
+                    {
+                        syslog(LOG_USER | LOG_WARNING, "%d\n", i);
+                        have_tasks = true;
+                        fprintf(output_fd, "ID: %d, Priority: %d, Path: %s, Status: %s\n", task[i]->task_id,
+                                task[i]->priority, task[i]->path, status_to_string(task[i]->status));
+                    }
+
+                if (!have_tasks)
+                {
+                    fprintf(output_fd, "NO TASKS\n");
+                }
+
+                fclose(output_fd);
+                response.response_code = OK;
+                snprintf(response.message, MAX_OUTPUT_SIZE, "/var/run/user/%d/da_tasks/task_LIST.info", getuid());
+                send(cfd, &response, sizeof(response), 0);
+
+                break;
+            }
             case PRINT: {
                 int thread_id = get_thread_id(msg.id, task);
                 if (thread_id == -1)
@@ -370,10 +399,10 @@ int main(void)
                 }
 
                 fclose(tree_fd);
+                fclose(output_fd);
                 response.response_code = OK;
                 snprintf(response.message, MAX_PATH_SIZE, "/var/run/user/%d/da_tasks/task_%d.info", getuid(), msg.id);
                 send(cfd, &response, sizeof(response), 0);
-                fclose(output_fd);
                 break;
             }
 
