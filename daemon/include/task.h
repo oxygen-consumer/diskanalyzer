@@ -2,13 +2,10 @@
 #define TASK_H
 
 #include <constants.h>
-
 #include <pthread.h>
 #include <shared.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define MAX_OUTPUT_SIZE 16384
 
 struct task_details
 {
@@ -20,6 +17,7 @@ struct task_details
     enum Status status;
     pthread_mutex_t *permission_mutex;
     pthread_mutex_t *status_mutex;
+    FILE *output_fd;
 };
 
 void output_task(struct task_details *task);
@@ -30,12 +28,7 @@ void output_task(struct task_details *task);
 void permission_to_continue(struct task_details *task);
 
 /*
- * Change task status.
- */
-void set_task_status(struct task_details *task, enum Status status);
-
-/*
- * Return a new task with the given id, path and priority.
+ *Return a new task with the given id, path and priority.
  */
 struct task_details *init_task(int id, char *path, enum Priority priority);
 
@@ -44,8 +37,36 @@ struct task_details *init_task(int id, char *path, enum Priority priority);
  */
 void destroy_task(struct task_details *task);
 
+/*
+ * Suspend a task by locking the mutex.
+ * Please call with set_task_status(task, PAUSED).
+ */
 void suspend_task(struct task_details *task);
 
+/*
+ * Resume a thread by unlocking the mutex.
+ * Please call with set_task_status(task, RUNNING).
+ */
 void resume_task(struct task_details *task);
+
+/*
+ * Close the outputfd and set the task status to finished
+ * Please call with set_task_status(task, FINISHED).
+ */
+void finish_task(struct task_details *task);
+
+/*
+ * Change task status.
+ * Lock the status mutex and change the status if the flow is ok.
+ */
+void set_task_status(struct task_details *task, enum Status status);
+
+/*
+ * ONLY IF IT IS FINISHED!
+ * we cannot remove task that are not finished because we cannot clean the opened directories in the recursive function
+ * to write the report at this moment.
+ * Cancel thread if working and free memory. Returns 0 when succes.
+ */
+int remove_task(struct task_details *task, pthread_t *thread);
 
 #endif // TASK_H

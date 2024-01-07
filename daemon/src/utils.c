@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <ftw.h>
 #include <pthread.h>
@@ -153,7 +154,7 @@ void syslog_message(const struct message *msg)
            priority);
 }
 
-int get_depth(const char *path, const char *subpath)
+int get_depth_of_subpath(const char *path, const char *subpath)
 {
     // Check if subpath starts with path
     if (strncmp(path, subpath, strlen(path)) != 0)
@@ -175,6 +176,28 @@ int get_depth(const char *path, const char *subpath)
     }
 
     return depth;
+}
+
+int directory_exists(const char *path)
+{
+    struct stat statbuf;
+
+    if (stat(path, &statbuf) != 0)
+    {
+        // Check if the error was ENOENT ("No such file or directory")
+        if (errno == ENOENT)
+        {
+            return 0; // The directory does not exist
+        }
+        else
+        {
+            perror("stat");
+            return -1;
+        }
+    }
+
+    // Check if the path is a directory
+    return S_ISDIR(statbuf.st_mode);
 }
 
 int get_unused_task(int used_tasks[MAX_TASKS])

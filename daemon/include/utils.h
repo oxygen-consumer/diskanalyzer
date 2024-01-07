@@ -47,9 +47,10 @@ char *relative_path(const char *path, int depth);
  */
 int special_directory(char *d_name);
 
-void syslog_message(const struct message *msg);
-
-int get_depth(const char *path, const char *subpath);
+/*
+ * Returns the depth of the subpath in the path or -1 if the subpath is not in the path.
+ */
+int get_depth_of_subpath(const char *path, const char *subpath);
 
 int get_unused_task(int used_tasks[MAX_TASKS]);
 
@@ -58,5 +59,10 @@ int get_thread_id(int task_id, struct task_details *task[MAX_TASKS]);
 void send_error_response(int client_fd, enum ResponseCode);
 
 char *status_to_string(enum Status status);
+
+/*
+ * Check if the directory exists, returns 1 if exits.
+ */
+int directory_exists(const char *path);
 
 #endif
