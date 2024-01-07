@@ -244,39 +244,19 @@ int main(void)
                     send_error_response(cfd, INVALID_ID_ERROR);
                     break;
                 }
+                else if (remove_task(task[thread_id], &threads[thread_id]) != 0)
+                {
+                    if (task[thread_id] != NULL)
+                        output_task(task[thread_id]);
+                    syslog(LOG_USER | LOG_WARNING, "Remove failed %d.", msg.id);
+                    send_error_response(cfd, GENERAL_ERROR);
+                }
                 else
                 {
-                    if (pthread_cancel(threads[thread_id]) != 0)
-                    {
-                        syslog(LOG_USER | LOG_WARNING, "Failed to cancel thread.");
-                        send_error_response(cfd, GENERAL_ERROR);
-                    }
-                    else
-                    {
-                        void *res;
-                        if (pthread_join(threads[thread_id], &res) != 0)
-                        {
-                            send_error_response(cfd, GENERAL_ERROR);
-                            syslog(LOG_USER | LOG_WARNING, "Failed to join thread.");
-                        }
-                        else if (res == PTHREAD_CANCELED)
-                        {
-                            syslog(LOG_USER | LOG_INFO, "Thread was cancelled.");
-                            destroy_task(task[thread_id]);
-                            task[thread_id] = NULL;
-                            used_tasks[thread_id] = 0;
-
-                            response.response_code = OK;
-                            send(cfd, &response, sizeof(response), 0);
-                        }
-                        else
-                        {
-                            send_error_response(cfd, GENERAL_ERROR);
-                            syslog(LOG_USER | LOG_INFO, "Thread was not cancelled.");
-                        }
-                    }
+                    task[thread_id] = NULL;
                 }
-
+                response.response_code = OK;
+                send(cfd, &response, sizeof(response), 0);
                 break;
             }
             case INFO: {
