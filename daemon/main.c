@@ -265,10 +265,7 @@ int main(void)
             }
 
             case REMOVE: {
-
-                // FIX REMOVE!!!!!!!!!!!!!!!
                 int thread_id = get_thread_id(msg.id, task);
-                // pthread_mutex_lock(task[thread_id]->permission_mutex);
                 if (thread_id == -1)
                 {
                     syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
@@ -277,7 +274,6 @@ int main(void)
                 }
                 else
                 {
-
                     if (pthread_cancel(threads[thread_id]) != 0)
                     {
                         syslog(LOG_USER | LOG_WARNING, "Failed to cancel thread.");
@@ -322,8 +318,6 @@ int main(void)
                 else
                 {
                     response.response_code = OK;
-                    // TO DO !!!!
-                    //  PUT INFO ABOUT TASK IN RESPONSE.MESSAGE
                     snprintf(response.message, MAX_PATH_SIZE, "ID: %d, Priority: %d, Path: %s, Status: %s",
                              task[thread_id]->task_id, task[thread_id]->priority, task[thread_id]->path,
                              status_to_string(task[thread_id]->status));
@@ -341,37 +335,44 @@ int main(void)
                 int thread_id = get_thread_id(msg.id, task);
                 if (thread_id == -1)
                 {
-                    response.response_code = INVALID_ID_ERROR;
-                    send(cfd, &response, sizeof(response), 0);
                     syslog(LOG_USER | LOG_WARNING, "Task %d does not exist.", msg.id);
+                    send_error_response(cfd, INVALID_ID_ERROR);
                     break;
                 }
                 if (task[thread_id]->status != FINISHED)
                 {
-                    response.response_code = NOT_FINISHED_ERROR;
-                    send(cfd, &response, sizeof(response), 0);
                     syslog(LOG_USER | LOG_WARNING, "Task %d is not finished.", msg.id);
+                    send_error_response(cfd, NOT_FINISHED_ERROR);
                     break;
                 }
                 snprintf(thread_output, MAX_OUTPUT_SIZE, "/var/run/user/%d/da_tasks/task_%d.info", getuid(), msg.id);
                 FILE *output_fd = fopen(thread_output, "w");
                 if (output_fd == NULL)
                 {
-                    response.response_code = GENERAL_ERROR;
-                    snprintf(response.message, MAX_PATH_SIZE, "Failed to open file.");
-                    send(cfd, &response, sizeof(response), 0);
                     syslog(LOG_USER | LOG_WARNING, "Error opening file for id %d.", msg.id);
+                    send_error_response(cfd, GENERAL_ERROR);
                     break;
                 }
 
-                while (fgets(buffer, sizeof(buffer), output_fd) != NULL)
+                char tree_output[MAX_OUTPUT_SIZE];
+                snprintf(tree_output, MAX_OUTPUT_SIZE, "/var/run/user/%d/da_tasks/tree_%d", getuid(), msg.id);
+                FILE *tree_fd = fopen(tree_output, "r");
+                if (tree_fd == NULL)
                 {
-                    syslog(LOG_INFO, "%s", buffer);
+                    syslog(LOG_USER | LOG_WARNING, "Error opening tree file for id %d.", msg.id);
+                    send_error_response(cfd, GENERAL_ERROR);
+                    break;
                 }
-                response.response_code = OK;
-                snprintf(response.message, MAX_PATH_SIZE, "/var/run/user/%d/da_tasks/task_%d.info", getuid(),
-                         msg.id); // temporary
 
+                while (fgets(buffer, sizeof(buffer), tree_fd) != NULL)
+                {
+                    fprintf(output_fd, "%s", buffer);
+                }
+
+                fclose(tree_fd);
+                response.response_code = OK;
+                snprintf(response.message, MAX_PATH_SIZE, "/var/run/user/%d/da_tasks/task_%d.info", getuid(), msg.id);
+                send(cfd, &response, sizeof(response), 0);
                 fclose(output_fd);
                 break;
             }
