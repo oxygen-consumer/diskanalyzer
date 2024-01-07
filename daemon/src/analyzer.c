@@ -104,8 +104,6 @@ void *start_analyses_thread(void *arg)
     current_task->total_size = get_size_dir(current_task->path, current_task);
     check_or_exit_thread(current_task->total_size != 0, current_task, "Total size = 0");
 
-    sleep(5);
-
     long long analyzing_size = analyzing(current_task->path, current_task);
     check_or_exit_thread(analyzing_size == current_task->total_size, current_task, "Different sizes");
 
