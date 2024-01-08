@@ -266,6 +266,7 @@ int main(void)
                 else
                 {
                     task[thread_id] = NULL;
+                    used_tasks[thread_id] = 0;
                 }
                 response.response_code = OK;
                 send(cfd, &response, sizeof(response), 0);
