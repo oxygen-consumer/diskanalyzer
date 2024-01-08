@@ -63,9 +63,6 @@ void finish_task(struct task_details *task);
 void set_task_status(struct task_details *task, enum Status status);
 
 /*
- * ONLY IF IT IS FINISHED!
- * we cannot remove task that are not finished because we cannot clean the opened directories in the recursive function
- * to write the report at this moment.
  * Cancel thread if working and free memory. Returns 0 when succes.
  */
 int remove_task(struct task_details *task, pthread_t *thread);

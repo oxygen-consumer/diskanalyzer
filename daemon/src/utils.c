@@ -38,6 +38,8 @@ void die(bool ok, const char *msg, ...)
     printf("%s\n", msg);
     syslog(LOG_USER | (ok ? LOG_INFO : LOG_ERR), "%s", msg);
 
+    // TODO: Destroy all tasks
+
     // Remove the socket file
     char SV_SOCK_PATH[37];
     sprintf(SV_SOCK_PATH, "/var/run/user/%d/diskanalyzer.sock", getuid());

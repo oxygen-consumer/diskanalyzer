@@ -57,6 +57,14 @@ long long get_size_dir(const char *path, struct task_details *task)
 long long analyzing(const char *path, struct task_details *task, double sub_progress)
 {
     // syslog(LOG_INFO, "Path: %s\ndepth =%d", path, get_depth_of_subpath(task->path, path));
+
+    /*
+     * Check if the thread should continue or die before opening the directory so that the file descriptor is not
+     * leaked.
+     */
+    pthread_testcancel();
+
+    // Wait until the thread is allowed to continue
     permission_to_continue(task);
 
     char sub_path[MAX_PATH_SIZE];
@@ -68,7 +76,7 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
     double dirs_count = 0;
     PathStack *stack = (PathStack *)malloc(sizeof(PathStack));
     initialize_path_stack(stack);
-    
+
     if (directory == NULL)
         return 0;
 
@@ -88,7 +96,6 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
         else if (S_ISDIR(file_stat.st_mode))
         {
             size += fsize(sub_path);
-            // size += analyzing(sub_path, task);
             push(stack, sub_path);
             dirs_count += 1;
             task->dirs += 1;
@@ -117,6 +124,10 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
 
 void *start_analyses_thread(void *arg)
 {
+    // Enable thread cancellation
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
     struct task_details *current_task = (struct task_details *)arg;
     set_task_status(current_task, RUNNING);
 
