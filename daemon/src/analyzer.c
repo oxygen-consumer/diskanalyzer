@@ -78,7 +78,10 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
     initialize_path_stack(stack);
 
     if (directory == NULL)
+    {
+        task->progress += sub_progress;
         return 0;
+    }
 
     while ((sub_directory = readdir(directory)) != NULL)
     {
@@ -95,7 +98,7 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
         }
         else if (S_ISDIR(file_stat.st_mode))
         {
-            size += fsize(sub_path);
+            // size += fsize(sub_path);
             push(stack, sub_path);
             dirs_count += 1;
             task->dirs += 1;
@@ -135,11 +138,11 @@ void *start_analyses_thread(void *arg)
     check_or_exit_thread(current_task->path[0] != '\0', current_task, "Empty path");
     check_or_exit_thread(directory_exists(current_task->path) != 0, current_task, "Directory does not exist");
 
-    current_task->total_size = get_size_dir(current_task->path, current_task);
-    check_or_exit_thread(current_task->total_size != 0, current_task, "Total size = 0");
+    // current_task->total_size = get_size_dir(current_task->path, current_task);
+    // check_or_exit_thread(current_task->total_size != 0, current_task, "Total size = 0");
 
     long long analyzing_size = analyzing(current_task->path, current_task, 100.0);
-    check_or_exit_thread(analyzing_size == current_task->total_size, current_task, "Different sizes");
+    // check_or_exit_thread(analyzing_size == current_task->total_size, current_task, "Different sizes");
 
     set_task_status(current_task, FINISHED);
     return NULL;
@@ -148,15 +151,15 @@ void *start_analyses_thread(void *arg)
 void write_report_info(const char *path, long long size, struct task_details *task)
 {
     int depth = get_depth_of_subpath(task->path, path);
-    if (depth > 0 && depth <= 2)
-    {
-        fprintf(task->output_fd, "|-%s | %0.2lf%% | %lld bytes | %d files | %d dirs\n", relative_path(path, depth),
-                ((double)size / task->total_size) * 100, size, task->files, task->dirs);
-    }
     if (depth == 1)
     {
-        fprintf(task->output_fd, "|\n");
+        fprintf(task->output_fd, "|-%s | %0.2lf%% | %0.2lf GB | %d files | %d dirs\n", relative_path(path, depth),
+                ((double)size / task->total_size) * 100, (double)size / 1073741824, task->files, task->dirs);
     }
+    // if (depth == 1)
+    // {
+    //     fprintf(task->output_fd, "|\n");
+    // }
     if (depth == 0)
     {
         fprintf(task->output_fd, "%s | %0.2lf%% | %lld bytes | %d files | %d dirs\n", path,
