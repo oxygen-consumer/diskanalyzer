@@ -65,4 +65,10 @@ char *status_to_string(enum Status status);
  */
 int directory_exists(const char *path);
 
+/*
+ * Check if str starts with pre.
+ * Return true if it does, false otherwise.
+ */
+bool starts_with(const char *pre, const char *str);
+
 #endif

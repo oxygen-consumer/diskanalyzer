@@ -261,3 +261,9 @@ char *status_to_string(enum Status status)
         return "UNKNOWN";
     }
 }
+
+bool starts_with(const char *pre, const char *str)
+{
+    size_t lenpre = strlen(pre), lenstr = strlen(str);
+    return lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0;
+}

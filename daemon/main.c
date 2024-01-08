@@ -139,6 +139,18 @@ int main(void)
                     break;
                 }
 
+                // Check if the path is already part of another task
+                for (int i = 0; i < MAX_TASKS; i++)
+                {
+                    if (used_tasks[i] && starts_with(task[i]->path, task[thread_id]->path))
+                    {
+                        syslog(LOG_USER | LOG_WARNING, "Path %s is already part of task %d.", task[thread_id]->path,
+                               task[i]->task_id);
+                        send_error_response(cfd, DIRECTOR_ALREADY_TRACKED_ERROR);
+                        break;
+                    }
+                }
+
                 // Assign priority to thread
                 pthread_attr_t attr;
                 pthread_attr_init(&attr);
