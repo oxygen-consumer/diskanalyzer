@@ -374,6 +374,7 @@ int main(void)
             }
 
             default:
+                send_error_response(cfd, INVALID_TASK_CODE_ERROR);
                 syslog(LOG_USER | LOG_WARNING, "Invalid task code.");
                 break;
             }

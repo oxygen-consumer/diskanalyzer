@@ -49,6 +49,7 @@ enum ResponseCode
     NO_TASK_DONE_ERROR,             // cannot list analysis reports if no task is finished
     GENERAL_ERROR,                  // really bad things happened
     NOT_FINISHED_ERROR,             // cannot print analysis report for a task that is not finished
+    INVALID_TASK_CODE_ERROR,        // invalid task code
     NO_RESPONSE,                    // used as default value
 };
 

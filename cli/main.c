@@ -54,12 +54,6 @@ int main(int argc, char *argv[])
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, SV_SOCK_PATH, sizeof(addr.sun_path) - 1);
 
-    if (connect(sfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1)
-    {
-        perror("connect");
-        exit(EXIT_FAILURE);
-    }
-
     int option;
     int option_index = 0;
     static struct option long_options[] = {{"add", required_argument, NULL, 'a'},
@@ -167,7 +161,13 @@ int main(int argc, char *argv[])
     {
         usage("No task specified");
     }
-    // FIX ME - even if i return 0 here the daemon still gets something
+
+    if (connect(sfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un)) == -1)
+    {
+        perror("connect");
+        exit(EXIT_FAILURE);
+    }
+
     ssize_t bytes_sent;
     bytes_sent = send(sfd, &msg, sizeof(msg), 0);
 
