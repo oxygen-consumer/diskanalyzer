@@ -5,8 +5,8 @@
 #include <string.h>
 #include <syslog.h>
 #include <task.h>
-#include <utils.h>
 #include <unistd.h>
+#include <utils.h>
 
 void output_task(struct task_details *task)
 {
@@ -50,6 +50,7 @@ struct task_details *init_task(int id, char *path, enum Priority priority)
     task->dirs = 0;
     task->files = 0;
     task->total_size = 0;
+    task->progress = 0.0;
 
     task->permission_mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
     task->status_mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
@@ -189,21 +190,20 @@ int remove_task(struct task_details *task, pthread_t *thread)
     if (task == NULL)
         return -1;
     int ok = 0;
-    pthread_mutex_lock(task->status_mutex);
-    if (task->status == FINISHED)
+
+    if (pthread_cancel(*thread) != 0)
     {
-        if (pthread_join(*thread, NULL) != 0)
-        {
-            syslog(LOG_ERR, "Error joining thread.");
-            ok = -1;
-        }
-    }
-    else
-    {
-        syslog(LOG_ERR, "Cannot remove a task that is not finished.");
+        syslog(LOG_ERR, "Error canceling thread.");
         ok = -1;
     }
-    pthread_mutex_unlock(task->status_mutex);
+
+    pthread_mutex_unlock(task->permission_mutex);
+
+    if (pthread_join(*thread, NULL) != 0)
+    {
+        syslog(LOG_ERR, "Error joining thread.");
+        ok = -1;
+    }
 
     if (ok == 0)
         destroy_task(task);

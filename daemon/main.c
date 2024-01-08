@@ -55,7 +55,7 @@ int main(void)
         task[i] = NULL;
         used_tasks[i] = 0;
     }
-    int next_id = 1;
+    size_t next_id = 1;
 
     // used for print, to be deleted after
     char thread_output[MAX_OUTPUT_SIZE];
@@ -124,6 +124,19 @@ int main(void)
             switch (msg.task_code)
             {
             case ADD: {
+                // Check if the path is already part of another task
+                for (int i = 0; i < MAX_TASKS; i++)
+                {
+                    if (used_tasks[i] && starts_with(task[i]->path, msg.path))
+                    {
+                        syslog(LOG_USER | LOG_WARNING, "Path %s is already part of task %d.", msg.path,
+                               task[i]->task_id);
+                        send_error_response(cfd, DIRECTOR_ALREADY_TRACKED_ERROR);
+                        break;
+                    }
+                }
+
+                // TODO: queue
                 int thread_id = get_unused_task(used_tasks);
                 if (thread_id == -1)
                 {
@@ -254,6 +267,7 @@ int main(void)
                 else
                 {
                     task[thread_id] = NULL;
+                    used_tasks[thread_id] = 0;
                 }
                 response.response_code = OK;
                 send(cfd, &response, sizeof(response), 0);
@@ -296,8 +310,9 @@ int main(void)
                     {
                         syslog(LOG_USER | LOG_WARNING, "%d\n", i);
                         have_tasks = true;
-                        fprintf(output_fd, "ID: %d, Priority: %d, Path: %s, Status: %s\n", task[i]->task_id,
-                                task[i]->priority, task[i]->path, status_to_string(task[i]->status));
+                        fprintf(output_fd, "ID: %d, Priority: %d, Path: %s, Done: %.2lf, Status: %s\n",
+                                task[i]->task_id, task[i]->priority, task[i]->path, task[i]->progress,
+                                status_to_string(task[i]->status));
                     }
 
                 if (!have_tasks)

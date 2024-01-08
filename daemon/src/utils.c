@@ -38,6 +38,8 @@ void die(bool ok, const char *msg, ...)
     printf("%s\n", msg);
     syslog(LOG_USER | (ok ? LOG_INFO : LOG_ERR), "%s", msg);
 
+    // TODO: Destroy all tasks
+
     // Remove the socket file
     char SV_SOCK_PATH[37];
     sprintf(SV_SOCK_PATH, "/var/run/user/%d/diskanalyzer.sock", getuid());
@@ -260,4 +262,10 @@ char *status_to_string(enum Status status)
     default:
         return "UNKNOWN";
     }
+}
+
+bool starts_with(const char *pre, const char *str)
+{
+    size_t lenpre = strlen(pre), lenstr = strlen(str);
+    return lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0;
 }

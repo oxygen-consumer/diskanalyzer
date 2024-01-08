@@ -1,5 +1,6 @@
 #include <analyzer.h>
 #include <constants.h>
+#include <path_stack.h>
 #include <task.h>
 #include <utils.h>
 
@@ -53,16 +54,28 @@ long long get_size_dir(const char *path, struct task_details *task)
     return size;
 }
 
-long long analyzing(const char *path, struct task_details *task)
+long long analyzing(const char *path, struct task_details *task, double sub_progress)
 {
     // syslog(LOG_INFO, "Path: %s\ndepth =%d", path, get_depth_of_subpath(task->path, path));
+
+    // Wait until the thread is allowed to continue
     permission_to_continue(task);
+
+    /*
+     * Check if the thread should continue or die before opening the directory so that the file descriptor is not
+     * leaked.
+     */
+    pthread_testcancel();
 
     char sub_path[MAX_PATH_SIZE];
     struct stat file_stat;
     struct dirent *sub_directory;
     long long size = 0;
     DIR *directory = opendir(path);
+
+    double dirs_count = 0;
+    PathStack *stack = (PathStack *)malloc(sizeof(PathStack));
+    initialize_path_stack(stack);
 
     if (directory == NULL)
         return 0;
@@ -83,17 +96,38 @@ long long analyzing(const char *path, struct task_details *task)
         else if (S_ISDIR(file_stat.st_mode))
         {
             size += fsize(sub_path);
-            size += analyzing(sub_path, task);
+            push(stack, sub_path);
+            dirs_count += 1;
             task->dirs += 1;
         }
     }
+
     check_or_exit_thread(closedir(directory) == 0, task, "Error closing directory");
+
+    while (!is_empty(stack))
+    {
+        char *sub_path = pop(stack);
+        size += analyzing(sub_path, task, sub_progress / dirs_count);
+        free(sub_path);
+    }
+
+    free_path_stack(stack);
+    free(stack);
+
+    if (dirs_count == 0)
+    {
+        task->progress += sub_progress;
+    }
     write_report_info(path, size, task);
     return size;
 }
 
 void *start_analyses_thread(void *arg)
 {
+    // Enable thread cancellation
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
     struct task_details *current_task = (struct task_details *)arg;
     set_task_status(current_task, RUNNING);
 
@@ -104,7 +138,7 @@ void *start_analyses_thread(void *arg)
     current_task->total_size = get_size_dir(current_task->path, current_task);
     check_or_exit_thread(current_task->total_size != 0, current_task, "Total size = 0");
 
-    long long analyzing_size = analyzing(current_task->path, current_task);
+    long long analyzing_size = analyzing(current_task->path, current_task, 100.0);
     check_or_exit_thread(analyzing_size == current_task->total_size, current_task, "Different sizes");
 
     set_task_status(current_task, FINISHED);
