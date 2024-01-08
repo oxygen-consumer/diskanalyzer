@@ -58,14 +58,14 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
 {
     // syslog(LOG_INFO, "Path: %s\ndepth =%d", path, get_depth_of_subpath(task->path, path));
 
+    // Wait until the thread is allowed to continue
+    permission_to_continue(task);
+
     /*
      * Check if the thread should continue or die before opening the directory so that the file descriptor is not
      * leaked.
      */
     pthread_testcancel();
-
-    // Wait until the thread is allowed to continue
-    permission_to_continue(task);
 
     char sub_path[MAX_PATH_SIZE];
     struct stat file_stat;

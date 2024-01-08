@@ -191,13 +191,13 @@ int remove_task(struct task_details *task, pthread_t *thread)
         return -1;
     int ok = 0;
 
-    pthread_mutex_unlock(task->permission_mutex);
-
     if (pthread_cancel(*thread) != 0)
     {
         syslog(LOG_ERR, "Error canceling thread.");
         ok = -1;
     }
+
+    pthread_mutex_unlock(task->permission_mutex);
 
     if (pthread_join(*thread, NULL) != 0)
     {
