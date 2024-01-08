@@ -50,6 +50,7 @@ struct task_details *init_task(int id, char *path, enum Priority priority)
     task->dirs = 0;
     task->files = 0;
     task->total_size = 0;
+    task->progress = 0.0;
 
     task->permission_mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
     task->status_mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));

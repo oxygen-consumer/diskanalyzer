@@ -296,8 +296,9 @@ int main(void)
                     {
                         syslog(LOG_USER | LOG_WARNING, "%d\n", i);
                         have_tasks = true;
-                        fprintf(output_fd, "ID: %d, Priority: %d, Path: %s, Status: %s\n", task[i]->task_id,
-                                task[i]->priority, task[i]->path, status_to_string(task[i]->status));
+                        fprintf(output_fd, "ID: %d, Priority: %d, Path: %s, Done: %.2lf, Status: %s\n",
+                                task[i]->task_id, task[i]->priority, task[i]->path, task[i]->progress,
+                                status_to_string(task[i]->status));
                     }
 
                 if (!have_tasks)

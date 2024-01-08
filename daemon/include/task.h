@@ -15,6 +15,7 @@ struct task_details
     long long total_size;
     enum Priority priority;
     enum Status status;
+    double progress;
     pthread_mutex_t *permission_mutex;
     pthread_mutex_t *status_mutex;
     FILE *output_fd;

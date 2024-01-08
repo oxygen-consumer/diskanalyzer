@@ -21,7 +21,7 @@ long long get_size_dir(const char *path, struct task_details *task);
 /*
  * Writes the analyze report to the file descriptor.
  */
-long long analyzing(const char *path, struct task_details *task);
+long long analyzing(const char *path, struct task_details *task, double sub_progress);
 
 /*
  * Start the thread report.
