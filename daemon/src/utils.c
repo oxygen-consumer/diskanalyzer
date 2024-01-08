@@ -73,8 +73,8 @@ long long fsize(const char *filename)
 {
     struct stat st;
 
-    if (stat(filename, &st) == 0)
-        return st.st_size;
+    if (lstat(filename, &st) == 0)
+        return st.st_blocks * 512;
 
     return 0;
 }
@@ -98,7 +98,7 @@ char *relative_path(const char *path, int depth)
 
 int special_directory(char *d_name)
 {
-    return strcmp(d_name, ".") == 0 || strcmp(d_name, "..") == 0 || d_name[0] == '.'; // also hidden files atm
+    return strcmp(d_name, ".") == 0 || strcmp(d_name, "..") == 0; // also hidden files atm
 }
 
 void syslog_message(const struct message *msg)
