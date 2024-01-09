@@ -19,7 +19,6 @@
 
 void check_or_exit_thread(int ok, struct task_details *task, const char *msg)
 {
-
     if (ok != 1)
     {
         syslog(LOG_ERR, "%s", msg);
@@ -56,8 +55,6 @@ long long get_size_dir(const char *path, struct task_details *task)
 
 long long analyzing(const char *path, struct task_details *task, double sub_progress)
 {
-    // syslog(LOG_INFO, "Path: %s\ndepth =%d", path, get_depth_of_subpath(task->path, path));
-
     // Wait until the thread is allowed to continue
     permission_to_continue(task);
 
@@ -73,7 +70,7 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
     long long size = 0;
     DIR *directory = opendir(path);
 
-    double dirs_count = 0;
+    int dirs_count = 0;
     PathStack *stack = (PathStack *)malloc(sizeof(PathStack));
     initialize_path_stack(stack);
 
@@ -110,7 +107,7 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
     while (!is_empty(stack))
     {
         char *sub_path = pop(stack);
-        size += analyzing(sub_path, task, sub_progress / dirs_count);
+        size += analyzing(sub_path, task, (double)sub_progress / dirs_count);
         free(sub_path);
     }
 
@@ -121,6 +118,7 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
     {
         task->progress += sub_progress;
     }
+
     write_report_info(path, size, task);
     return size;
 }
