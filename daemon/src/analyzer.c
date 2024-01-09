@@ -19,7 +19,6 @@
 
 void check_or_exit_thread(int ok, struct task_details *task, const char *msg)
 {
-
     if (ok != 1)
     {
         syslog(LOG_ERR, "%s", msg);
@@ -28,36 +27,8 @@ void check_or_exit_thread(int ok, struct task_details *task, const char *msg)
     }
 }
 
-long long get_size_dir(const char *path, struct task_details *task)
-{
-    // syslog(LOG_INFO, "Path: %s\ndepth =%d", path, get_depth_of_subpath(task->path, path));
-    permission_to_continue(task);
-    DIR *directory = opendir(path);
-
-    if (directory == NULL)
-        return 0;
-
-    char sub_path[MAX_PATH_SIZE] = "";
-
-    struct dirent *sub_directory;
-    long long size = 0;
-    while ((sub_directory = readdir(directory)) != NULL)
-    {
-        if (special_directory(sub_directory->d_name))
-            continue;
-
-        add_to_path(path, sub_directory->d_name, sub_path);
-        size += fsize(sub_path);
-        size += get_size_dir(sub_path, task);
-    }
-    check_or_exit_thread(closedir(directory) == 0, task, "Error closing directory");
-    return size;
-}
-
 long long analyzing(const char *path, struct task_details *task, double sub_progress)
 {
-    // syslog(LOG_INFO, "Path: %s\ndepth =%d", path, get_depth_of_subpath(task->path, path));
-
     // Wait until the thread is allowed to continue
     permission_to_continue(task);
 
@@ -73,7 +44,7 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
     long long size = 0;
     DIR *directory = opendir(path);
 
-    double dirs_count = 0;
+    int dirs_count = 0;
     PathStack *stack = (PathStack *)malloc(sizeof(PathStack));
     initialize_path_stack(stack);
 
@@ -110,7 +81,7 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
     while (!is_empty(stack))
     {
         char *sub_path = pop(stack);
-        size += analyzing(sub_path, task, sub_progress / dirs_count);
+        size += analyzing(sub_path, task, (double)sub_progress / dirs_count);
         free(sub_path);
     }
 
@@ -121,6 +92,7 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
     {
         task->progress += sub_progress;
     }
+
     write_report_info(path, size, task);
     return size;
 }
@@ -138,13 +110,11 @@ void *start_analyses_thread(void *arg)
     check_or_exit_thread(current_task->path[0] != '\0', current_task, "Empty path");
     check_or_exit_thread(directory_exists(current_task->path) != 0, current_task, "Directory does not exist");
 
-    // current_task->total_size = get_size_dir(current_task->path, current_task);
-    // check_or_exit_thread(current_task->total_size != 0, current_task, "Total size = 0");
-
     long long analyzing_size = analyzing(current_task->path, current_task, 100.0);
-    // check_or_exit_thread(analyzing_size == current_task->total_size, current_task, "Different sizes");
 
     set_task_status(current_task, FINISHED);
+    // just in case
+    current_task->progress = 100.0;
     return NULL;
 }
 
@@ -153,16 +123,12 @@ void write_report_info(const char *path, long long size, struct task_details *ta
     int depth = get_depth_of_subpath(task->path, path);
     if (depth == 1)
     {
-        fprintf(task->output_fd, "|-%s | %0.2lf%% | %0.2lf GB | %d files | %d dirs\n", relative_path(path, depth),
-                ((double)size / task->total_size) * 100, (double)size / 1073741824, task->files, task->dirs);
+        fprintf(task->output_fd, "|-%s/ | %lld bytes | %d files | %d dirs\n", relative_path(path, depth),
+                size, task->files, task->dirs);
     }
-    // if (depth == 1)
-    // {
-    //     fprintf(task->output_fd, "|\n");
-    // }
+
     if (depth == 0)
     {
-        fprintf(task->output_fd, "%s | %0.2lf%% | %lld bytes | %d files | %d dirs\n", path,
-                ((double)size / task->total_size) * 100, size, task->files, task->dirs);
+        fprintf(task->output_fd, "%s/ | %lld bytes | %d files | %d dirs\n", path, size, task->files, task->dirs);
     }
 }

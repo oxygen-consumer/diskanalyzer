@@ -1,5 +1,3 @@
-
-
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -110,7 +108,7 @@ void resume_task(struct task_details *task)
     if (task->output_fd == NULL)
     {
         syslog(LOG_ERR, "Error opening file when resume at task %d", task->task_id);
-        exit(errno); // if we couldn't open the file, we can't continue
+        return; // if we couldn't open the file, we can't continue
     }
 
     task->status = RUNNING;
