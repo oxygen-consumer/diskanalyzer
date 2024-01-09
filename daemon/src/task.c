@@ -15,7 +15,6 @@ void output_task(struct task_details *task)
     syslog(LOG_INFO, "Task files: %d", task->files);
     syslog(LOG_INFO, "Task dirs: %d", task->dirs);
     syslog(LOG_INFO, "Task path: %s", task->path);
-    syslog(LOG_INFO, "Task total_size: %lld", task->total_size);
     syslog(LOG_INFO, "-----------------");
 }
 
@@ -47,7 +46,6 @@ struct task_details *init_task(int id, char *path, enum Priority priority)
     task->status = NOT_STARTED;
     task->dirs = 0;
     task->files = 0;
-    task->total_size = 0;
     task->progress = 0.0;
 
     task->permission_mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
@@ -93,53 +91,62 @@ void destroy_task(struct task_details *task)
     task = NULL;
 }
 
-void suspend_task(struct task_details *task)
+int suspend_task(struct task_details *task)
 {
     pthread_mutex_lock(task->permission_mutex);
+    if (fclose(task->output_fd) != 0)
+    {
+        syslog(LOG_ERR, "Error closing file when suspend at task %d", task->task_id);
+        pthread_mutex_unlock(task->permission_mutex);
+        return -1;
+    }
     task->status = PAUSED;
-
-    fclose(task->output_fd);
     syslog(LOG_INFO, "Task %d suspended.", task->task_id);
+    return 0;
 }
 
-void resume_task(struct task_details *task)
+int resume_task(struct task_details *task)
 {
     task->output_fd = get_output_fd(task->task_id);
     if (task->output_fd == NULL)
     {
         syslog(LOG_ERR, "Error opening file when resume at task %d", task->task_id);
-        return; // if we couldn't open the file, we can't continue
+        return -1;
     }
-
     task->status = RUNNING;
     pthread_mutex_unlock(task->permission_mutex);
     syslog(LOG_INFO, "Task %d resumed.", task->task_id);
+    return 0;
 }
 
-void finish_task(struct task_details *task)
+int finish_task(struct task_details *task)
 {
+    if (fclose(task->output_fd) != 0)
+    {
+        syslog(LOG_ERR, "Error closing file when finish at task %d", task->task_id);
+        return -1;
+    }
     task->status = FINISHED;
-    fclose(task->output_fd);
-
     syslog(LOG_INFO, "Task %d finished.", task->task_id);
+    return 0;
 }
 
-void set_task_status(struct task_details *task, enum Status status)
+int set_task_status(struct task_details *task, enum Status status)
 {
     pthread_mutex_lock(task->status_mutex);
+    int ok = 0;
     syslog(LOG_INFO, "Task %d with status %s.", task->task_id, status_to_string(status));
-    // output_task(task);
 
-    // TODO: check if status change is valid
     switch (status)
     {
     case NOT_STARTED:
+        ok = -1;
         syslog(LOG_ERR, "Cannot go back in time.");
         break;
     case RUNNING:
         if (task->status == PAUSED)
         {
-            resume_task(task);
+            ok = resume_task(task);
         }
         else if (task->status == NOT_STARTED)
         {
@@ -149,52 +156,61 @@ void set_task_status(struct task_details *task, enum Status status)
         else
         {
             syslog(LOG_ERR, "Cannot resume a task that is not paused or not started.");
+            ok = -1;
         }
         break;
     case PAUSED:
         if (task->status == RUNNING)
         {
-            suspend_task(task);
+            ok = suspend_task(task);
         }
         else
         {
             syslog(LOG_ERR, "Cannot suspend a task that is not running.");
+            ok = -1;
         }
         break;
     case FINISHED:
         if (task->status == RUNNING)
         {
-            finish_task(task);
+            ok = finish_task(task);
         }
         else
         {
             syslog(LOG_ERR, "Cannot finish a task that is not running.");
+            ok = -1;
         }
         break;
     case ERROR:
         task->status = ERROR;
         syslog(LOG_ERR, "Task %d with status ERROR.", task->task_id);
+        ok = 0;
         break;
     default:
         syslog(LOG_ERR, "Invalid status change.");
+        ok = -1;
         break;
     }
     output_task(task);
     pthread_mutex_unlock(task->status_mutex);
+    return ok;
 }
 
 int remove_task(struct task_details *task, pthread_t *thread)
 {
+    // If the thread is already deleted return false.
     if (task == NULL)
         return -1;
     int ok = 0;
 
+    // Send cancel signal to the thread.
     if (pthread_cancel(*thread) != 0)
     {
         syslog(LOG_ERR, "Error canceling thread.");
         ok = -1;
     }
 
+    // If the thread is suspendent, we need to unlock the mutex to allow it to die.
     pthread_mutex_unlock(task->permission_mutex);
 
     if (pthread_join(*thread, NULL) != 0)
@@ -203,6 +219,13 @@ int remove_task(struct task_details *task, pthread_t *thread)
         ok = -1;
     }
 
+    if (task->status == FINISHED || task->status == ERROR)
+    {
+        syslog(LOG_INFO, "Task %d finished already.", task->task_id);
+        ok = 0;
+    }
+
+    // If the thread died or was canceled due an error, we can to destroy the task.
     if (ok == 0)
         destroy_task(task);
     return ok;
