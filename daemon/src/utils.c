@@ -74,7 +74,7 @@ long long fsize(const char *filename)
     struct stat st;
 
     if (lstat(filename, &st) == 0)
-        return st.st_blocks * 512;
+        return st.st_size;
 
     return 0;
 }
