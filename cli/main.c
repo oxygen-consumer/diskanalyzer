@@ -234,9 +234,7 @@ int main(int argc, char *argv[])
         break;
     }
     case PRINT: {
-        char *message = read_from_path(response.message);
-        printf("%s\n", message);
-        free(message);
+        print_deamon_report(response.message);
         break;
     }
     default: {

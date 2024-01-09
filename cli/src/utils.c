@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_LINES 500
+
 int get_id(const char *str)
 {
     char *endptr;
@@ -85,6 +87,8 @@ char *response_code_to_string(enum ResponseCode code)
         return "TASK_ALREADY_RUNNING_ERROR";
     case NO_TASK_DONE_ERROR:
         return "NO_TASK_DONE_ERROR";
+    case NOT_FINISHED_ERROR:
+        return "NOT_FINISHED_ERROR";
     case GENERAL_ERROR:
         return "GENERAL_ERROR";
     case NO_RESPONSE:
@@ -126,4 +130,98 @@ char *read_from_path(const char *path)
         free(line);
 
     return result;
+}
+
+int get_last_slash_index(const char *str)
+{
+    size_t i = strlen(str) - 1;
+    while (str[i] != '/')
+        i--;
+    return i;
+}
+
+long long get_first_number(char *str)
+{
+    long long ans = 0;
+    size_t i = 0;
+    while (!(str[i] >= '0' && str[i] <= '9'))
+        i++;
+    while (str[i] >= '0' && str[i] <= '9')
+    {
+        ans = ans * 10 + (str[i] - '0');
+        i++;
+    }
+    return ans;
+}
+
+long long get_nth_number(char *str, int n)
+{
+    if (n == 1)
+    {
+        return get_first_number(str);
+    }
+    while (!(str[0] >= '0' && str[0] <= '9'))
+        str++;
+    while (str[0] >= '0' && str[0] <= '9')
+        str++;
+    return get_nth_number(str, n - 1);
+}
+
+void print_deamon_report(const char *path)
+{
+    FILE *fp;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    fp = fopen(path, "r");
+    if (fp == NULL)
+    {
+        fprintf(stderr, "Failed to open daemon response file:  %s\n", path);
+        exit(EXIT_FAILURE);
+    }
+
+    char **lines = malloc(sizeof(char *) * MAX_LINES);
+    int line_count = 0;
+    int pre_dirs = 0;
+    int pre_files = 0;
+
+    int a_dirs[MAX_LINES];
+    int a_files[MAX_LINES];
+    int a_bytes[MAX_LINES];
+    int last_dir;
+    int last_file;
+
+    while ((read = getline(&line, &len, fp)) != -1)
+    {
+        lines[line_count] = malloc(sizeof(char) * (strlen(line) + 1));
+        strcpy(lines[line_count], line);
+        int bytes = get_nth_number(lines[line_count], 1);
+        last_file = get_nth_number(lines[line_count], 2);
+        last_dir = get_nth_number(lines[line_count], 3);
+        int files = last_file - pre_files;
+        int dirs = last_dir - pre_dirs;
+        a_bytes[line_count] = bytes;
+        a_dirs[line_count] = dirs;
+        a_files[line_count] = files;
+        pre_dirs += dirs;
+        pre_files += files;
+        line_count++;
+    }
+    a_files[line_count - 1] = last_file;
+    a_dirs[line_count - 1] = last_dir;
+    fclose(fp);
+    if (line)
+        free(line);
+
+    for (int i = line_count - 1; i >= 0; i--)
+    {
+        int last_slash_index = get_last_slash_index(lines[i]);
+        for (int j = 0; j < last_slash_index; j++)
+            printf("%c", lines[i][j]);
+
+        printf("\t\t\t | %d bytes (%0.3lf%%)\t | %d files \t| %d dirs\n", a_bytes[i],
+               (double)a_bytes[i] / a_bytes[line_count - 1] * 100.0, a_files[i], a_dirs[i]);
+        free(lines[i]);
+    }
+    free(lines);
 }
