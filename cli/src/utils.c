@@ -127,3 +127,7 @@ char *read_from_path(const char *path)
 
     return result;
 }
+
+void print_deamon_report(const char *path)
+{
+}

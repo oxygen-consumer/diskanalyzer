@@ -13,3 +13,5 @@ char *priority_to_string(enum Priority priority);
 char *response_code_to_string(enum ResponseCode code);
 
 char *read_from_path(const char *path);
+
+void print_deamon_report(const char *path);
