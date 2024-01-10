@@ -37,15 +37,13 @@ int main(void)
     }
 
     // Socket preparation
-    const int BACKLOG = 16, BUF_SIZE = 4096;
+    const int BACKLOG = 16;
 
     char SV_SOCK_PATH[37];
     sprintf(SV_SOCK_PATH, "/var/run/user/%d/diskanalyzer.sock", getuid());
 
     struct sockaddr_un addr;
-    char buf[BUF_SIZE];
     int sfd, cfd; // server fd, client fd
-    ssize_t nread;
     pthread_t threads[MAX_TASKS];
     struct task_details *task[MAX_TASKS];
     int used_tasks[MAX_TASKS];
@@ -113,10 +111,6 @@ int main(void)
                 continue;
             }
 
-            // wtf is this?
-            // syslog_message(&msg);
-
-            ssize_t bytes_sent = -1;
             struct Response response;
             response.response_code = NO_RESPONSE;
             response.message[0] = '\0';
@@ -139,7 +133,6 @@ int main(void)
                 }
                 if (to_break)
                     break;
-                // TODO: queue
                 int thread_id = get_unused_task(used_tasks);
                 if (thread_id == -1)
                 {
@@ -325,7 +318,7 @@ int main(void)
                     {
                         syslog(LOG_USER | LOG_WARNING, "Listed task %d\n", i);
                         have_tasks = true;
-                        fprintf(output_fd, "ID: %d, Priority: %d, Path: %s, Done: %.2lf\%, Status: %s\n",
+                        fprintf(output_fd, "ID: %d, Priority: %d, Path: %s, Done: %.2lf%%, Status: %s\n",
                                 task[i]->task_id, task[i]->priority, task[i]->path, task[i]->progress,
                                 status_to_string(task[i]->status));
                     }
