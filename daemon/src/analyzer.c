@@ -30,6 +30,12 @@ void check_or_exit_thread(int ok, struct task_details *task, const char *msg)
     }
 }
 
+void cleanup_handler(void *arg)
+{
+    free_path_stack(arg);
+    free(arg);
+}
+
 long long analyzing(const char *path, struct task_details *task, double sub_progress)
 {
     // Wait until the thread is allowed to continue
@@ -47,15 +53,17 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
     long long size = 0;
     DIR *directory = opendir(path);
 
-    int dirs_count = 0;
-    PathStack *stack = (PathStack *)malloc(sizeof(PathStack));
-    initialize_path_stack(stack);
-
     if (directory == NULL)
     {
         task->progress += sub_progress;
         return 0;
     }
+
+    int dirs_count = 0;
+    PathStack *stack = (PathStack *)malloc(sizeof(PathStack));
+    initialize_path_stack(stack);
+
+    pthread_cleanup_push(cleanup_handler, stack);
 
     while ((sub_directory = readdir(directory)) != NULL)
     {
@@ -87,9 +95,7 @@ long long analyzing(const char *path, struct task_details *task, double sub_prog
         size += analyzing(sub_path, task, (double)sub_progress / dirs_count);
         free(sub_path);
     }
-
-    free_path_stack(stack);
-    free(stack);
+    pthread_cleanup_pop(1);
 
     if (dirs_count == 0)
     {
