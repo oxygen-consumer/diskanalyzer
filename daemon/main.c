@@ -292,8 +292,9 @@ int main(void)
                 else
                 {
                     response.response_code = OK;
-                    snprintf(response.message, MAX_PATH_SIZE, "ID: %d, Priority: %d, Path: %s, Status: %s",
-                             task[thread_id]->task_id, task[thread_id]->priority, task[thread_id]->path,
+                    snprintf(response.message, MAX_PATH_SIZE,
+                             "ID: %d, Priority: %d, Progress %0.2lf%%, Path: %s, Status: %s", task[thread_id]->task_id,
+                             task[thread_id]->priority, task[thread_id]->progress, task[thread_id]->path,
                              status_to_string(task[thread_id]->status));
                     send(cfd, &response, sizeof(response), 0);
                     syslog(LOG_USER | LOG_WARNING, "Task %d info sent.", msg.id);

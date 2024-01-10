@@ -198,8 +198,8 @@ void print_deamon_report(const char *path)
         long long bytes = get_nth_number(lines[line_count], 1);
         last_file = get_nth_number(lines[line_count], 2);
         last_dir = get_nth_number(lines[line_count], 3);
-        int files = last_file - pre_files;
-        int dirs = last_dir - pre_dirs;
+        long long files = last_file - pre_files;
+        long long dirs = last_dir - pre_dirs;
         a_bytes[line_count] = bytes;
         a_dirs[line_count] = dirs;
         a_files[line_count] = files;
