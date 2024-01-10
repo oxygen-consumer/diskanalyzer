@@ -181,21 +181,21 @@ void print_deamon_report(const char *path)
     }
 
     char **lines = malloc(sizeof(char *) * MAX_LINES);
-    int line_count = 0;
-    int pre_dirs = 0;
-    int pre_files = 0;
+    long long line_count = 0;
+    long long pre_dirs = 0;
+    long long pre_files = 0;
 
-    int a_dirs[MAX_LINES];
-    int a_files[MAX_LINES];
-    int a_bytes[MAX_LINES];
-    int last_dir;
-    int last_file;
+    long long a_dirs[MAX_LINES];
+    long long a_files[MAX_LINES];
+    long long a_bytes[MAX_LINES];
+    long long last_dir;
+    long long last_file;
 
     while ((read = getline(&line, &len, fp)) != -1)
     {
         lines[line_count] = malloc(sizeof(char) * (strlen(line) + 1));
         strcpy(lines[line_count], line);
-        int bytes = get_nth_number(lines[line_count], 1);
+        long long bytes = get_nth_number(lines[line_count], 1);
         last_file = get_nth_number(lines[line_count], 2);
         last_dir = get_nth_number(lines[line_count], 3);
         int files = last_file - pre_files;
@@ -219,7 +219,7 @@ void print_deamon_report(const char *path)
         for (int j = 0; j < last_slash_index; j++)
             printf("%c", lines[i][j]);
 
-        printf("\t\t\t | %d bytes (%0.3lf%%)\t | %d files \t| %d dirs\n", a_bytes[i],
+        printf("\t\t\t | %llu bytes (%0.3lf%%)\t | %llu files \t| %llu dirs\n", a_bytes[i],
                (double)a_bytes[i] / a_bytes[line_count - 1] * 100.0, a_files[i], a_dirs[i]);
         free(lines[i]);
     }

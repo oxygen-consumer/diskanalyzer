@@ -22,7 +22,10 @@ void check_or_exit_thread(int ok, struct task_details *task, const char *msg)
     if (ok != 1)
     {
         syslog(LOG_ERR, "%s", msg);
-        set_task_status(task, ERROR);
+        if (set_task_status(task, ERROR) != 0)
+        {
+            syslog(LOG_ERR, "Error setting task status to ERROR");
+        }
         pthread_exit(NULL);
     }
 }
@@ -104,7 +107,8 @@ void *start_analyses_thread(void *arg)
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
     struct task_details *current_task = (struct task_details *)arg;
-    set_task_status(current_task, RUNNING);
+    check_or_exit_thread(set_task_status(current_task, RUNNING) == 0, current_task,
+                         "Error setting task status to RUNNING");
 
     check_or_exit_thread(current_task->path != NULL, current_task, "NULL path");
     check_or_exit_thread(current_task->path[0] != '\0', current_task, "Empty path");
@@ -112,7 +116,8 @@ void *start_analyses_thread(void *arg)
 
     long long analyzing_size = analyzing(current_task->path, current_task, 100.0);
 
-    set_task_status(current_task, FINISHED);
+    check_or_exit_thread(set_task_status(current_task, FINISHED) == 0, current_task,
+                         "Error setting task status to FINISHED");
     // just in case
     current_task->progress = 100.0;
     return NULL;

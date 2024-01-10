@@ -12,7 +12,6 @@ struct task_details
     int task_id;
     int files, dirs;
     char path[MAX_PATH_SIZE];
-    long long total_size;
     enum Priority priority;
     enum Status status;
     double progress;
@@ -40,27 +39,30 @@ void destroy_task(struct task_details *task);
 
 /*
  * Suspend a task by locking the mutex.
+ * Returns 0 when succes.
  * Please call with set_task_status(task, PAUSED).
  */
-void suspend_task(struct task_details *task);
+int suspend_task(struct task_details *task);
 
 /*
  * Resume a thread by unlocking the mutex.
+ * Returns 0 when succes.
  * Please call with set_task_status(task, RUNNING).
  */
-void resume_task(struct task_details *task);
+int resume_task(struct task_details *task);
 
 /*
  * Close the outputfd and set the task status to finished
  * Please call with set_task_status(task, FINISHED).
+ * Returns 0 when succes.
  */
-void finish_task(struct task_details *task);
+int finish_task(struct task_details *task);
 
 /*
- * Change task status.
- * Lock the status mutex and change the status if the flow is ok.
+ * Change task status if the flow is ok.
+ * Returns 0 when succes.
  */
-void set_task_status(struct task_details *task, enum Status status);
+int set_task_status(struct task_details *task, enum Status status);
 
 /*
  * Cancel thread if working and free memory. Returns 0 when succes.

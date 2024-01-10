@@ -213,9 +213,15 @@ int main(void)
                         break;
                     }
 
-                    set_task_status(task[thread_id], PAUSED);
-                    syslog(LOG_USER | LOG_WARNING, "Task %d suspended.", msg.id);
-                    response.response_code = OK;
+                    if (set_task_status(task[thread_id], PAUSED) == 0)
+                    {
+                        response.response_code = OK;
+                        syslog(LOG_USER | LOG_WARNING, "Task %d suspended.", msg.id);
+                    }
+                    else
+                    {
+                        response.response_code = GENERAL_ERROR;
+                    }
                     send(cfd, &response, sizeof(response), 0);
                 }
 
@@ -244,9 +250,15 @@ int main(void)
                         break;
                     }
 
-                    set_task_status(task[thread_id], RUNNING);
-                    syslog(LOG_USER | LOG_WARNING, "Task %d resumed.", msg.id);
-                    response.response_code = OK;
+                    if (set_task_status(task[thread_id], RUNNING) == 0)
+                    {
+                        syslog(LOG_USER | LOG_WARNING, "Task %d resumed.", msg.id);
+                        response.response_code = OK;
+                    }
+                    else
+                    {
+                        response.response_code = GENERAL_ERROR;
+                    }
                     send(cfd, &response, sizeof(response), 0);
                 }
                 break;
